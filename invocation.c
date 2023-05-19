@@ -28,15 +28,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-IP_ADDRESS parse_ip_address(char *ip_address_str)
+IP_ADDRESS_WITH_CIDR parse_ip_address(char *ip_address_str)
 {
-    IP_ADDRESS ip_address;
+    IP_ADDRESS_WITH_CIDR ip_address;
     // break up into octets
     char *octet = strtok(ip_address_str, ".");
     int i = 0;
     while (octet != NULL)
     {
-        ip_address.octets[i] = atoi(octet);
+        ip_address.octet[i] = atoi(octet);
         octet = strtok(NULL, ".");
         i++;
     }

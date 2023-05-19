@@ -8,17 +8,17 @@ typedef enum SWITCH_TYPE
     MIXED
 } SWITCH_TYPE;
 
-typedef struct IP_ADDRESS
+typedef struct IP_ADDRESS_WITH_CIDR
 {
-    unsigned char octets[4];
+    unsigned char octet[4];
     unsigned char cidr;
-} IP_ADDRESS;
+} IP_ADDRESS_WITH_CIDR;
 
 typedef struct SWITCH
 {
     SWITCH_TYPE type;
-    IP_ADDRESS local_ip;
-    IP_ADDRESS global_ip;
+    IP_ADDRESS_WITH_CIDR local_ip;
+    IP_ADDRESS_WITH_CIDR global_ip;
     unsigned short latitude;
     unsigned short longitude;
 } SWITCH;

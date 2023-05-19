@@ -6,6 +6,7 @@
 
 #include "invocation.h"
 #include "open_port.h"
+#include "packet.h"
 
 int main(int argc, char *argv[])
 {
