@@ -1,0 +1,5 @@
+RUSHBSwitch
+*.o
+
+.vscode
+git.sh
