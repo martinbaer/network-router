@@ -30,78 +30,78 @@
 
 IP_ADDRESS_WITH_CIDR parse_ip_address(char *ip_address_str)
 {
-    IP_ADDRESS_WITH_CIDR ip_address;
-    // break up into octets
-    char *octet = strtok(ip_address_str, ".");
-    int i = 0;
-    while (octet != NULL)
-    {
-        ip_address.octet[i] = atoi(octet);
-        octet = strtok(NULL, ".");
-        i++;
-    }
-    // get cidr
-    char *cidr = strtok(ip_address_str, "/");
-    ip_address.cidr = atoi(cidr);
-    return ip_address;
+	IP_ADDRESS_WITH_CIDR ip_address;
+	// break up into octets
+	char *octet = strtok(ip_address_str, ".");
+	int i = 0;
+	while (octet != NULL)
+	{
+		ip_address.ip_address.octet[i] = atoi(octet);
+		octet = strtok(NULL, ".");
+		i++;
+	}
+	// get cidr
+	char *cidr = strtok(ip_address_str, "/");
+	ip_address.cidr = atoi(cidr);
+	return ip_address;
 }
 
 SWITCH parse_command_line(int argc, char *argv[])
 {
-    SWITCH sw;
-    // get switch type
-    if (argc == 5)
-    {
-        // check if local or global
-        if (strcmp(argv[1], "local") == 0)
-        {
-            sw.type = LOCAL;
-        }
-        else if (strcmp(argv[1], "global") == 0)
-        {
-            sw.type = GLOBAL;
-        }
-        else
-        {
-            printf("Invalid switch type (a)\n");
-            exit(1);
-        }
-    }
-    else if (argc == 6)
-    {
-        sw.type = MIXED;
-        // check that first argument is local
-        if (strcmp(argv[1], "local") != 0)
-        {
-            printf("Invalid switch type (b)\n");
-            exit(1);
-        }
-    }
-    else
-    {
-        printf("Invalid number of arguments\n");
-        exit(1);
-    }
-    // get local ip address
-    if (sw.type == LOCAL || sw.type == MIXED)
-    {
-        // at index 2
-        sw.local_ip = parse_ip_address(argv[2]);
-    }
-    // get global ip address
-    if (sw.type == MIXED)
-    {
-        // at index 4
-        sw.global_ip = parse_ip_address(argv[4]);
-    }
-    else if (sw.type == GLOBAL)
-    {
-        // at index 2
-        sw.global_ip = parse_ip_address(argv[2]);
-    }
-    // get latitude
-    sw.latitude = atoi(argv[argc - 2]);
-    // get longitude
-    sw.longitude = atoi(argv[argc - 1]);
-    return sw;
+	SWITCH sw;
+	// get switch type
+	if (argc == 5)
+	{
+		// check if local or global
+		if (strcmp(argv[1], "local") == 0)
+		{
+			sw.type = LOCAL;
+		}
+		else if (strcmp(argv[1], "global") == 0)
+		{
+			sw.type = GLOBAL;
+		}
+		else
+		{
+			printf("Invalid switch type (a)\n");
+			exit(1);
+		}
+	}
+	else if (argc == 6)
+	{
+		sw.type = MIXED;
+		// check that first argument is local
+		if (strcmp(argv[1], "local") != 0)
+		{
+			printf("Invalid switch type (b)\n");
+			exit(1);
+		}
+	}
+	else
+	{
+		printf("Invalid number of arguments\n");
+		exit(1);
+	}
+	// get local ip address
+	if (sw.type == LOCAL || sw.type == MIXED)
+	{
+		// at index 2
+		sw.local_ip = parse_ip_address(argv[2]);
+	}
+	// get global ip address
+	if (sw.type == MIXED)
+	{
+		// at index 4
+		sw.global_ip = parse_ip_address(argv[4]);
+	}
+	else if (sw.type == GLOBAL)
+	{
+		// at index 2
+		sw.global_ip = parse_ip_address(argv[2]);
+	}
+	// get latitude
+	sw.latitude = atoi(argv[argc - 2]);
+	// get longitude
+	sw.longitude = atoi(argv[argc - 1]);
+	return sw;
 }
