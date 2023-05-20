@@ -2,6 +2,7 @@
 #define GLOBALS_H
 
 #include "packet.h"
+#include "invocation.h"
 
 // struct to be shared
 typedef struct ALL_CONNECTIONS
@@ -11,5 +12,7 @@ typedef struct ALL_CONNECTIONS
 } ALL_CONNECTIONS;
 
 extern ALL_CONNECTIONS all_connections;
+
+extern SWITCH this_switch;
 
 #endif

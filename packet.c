@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "packet.h"
 
@@ -35,6 +36,28 @@ BYTE *packet_to_bytes(PACKET packet)
 	return result;
 }
 
+// typedef struct IP_ADDRESS
+// {
+// 	unsigned char octet[4];
+// } IP_ADDRESS;
+IP_ADDRESS bytes_to_ip_address(BYTE *bytes)
+{
+	IP_ADDRESS result;
+	memcpy(&result, bytes, 4);
+	return result;
+}
+
+PACKET bytes_to_packet(BYTE *bytes)
+{
+	PACKET result;
+	result.source_ip = bytes_to_ip_address(bytes);
+	result.destination_ip = bytes_to_ip_address(bytes + 4);
+	memcpy(&result.offset, bytes + 8, 3);
+	memcpy(&result.mode, bytes + 11, 1);
+	result.data = bytes + 12;
+	return result;
+}
+
 PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, char *data)
 {
 	PACKET result;
@@ -46,7 +69,7 @@ PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int 
 	return result;
 }
 
-void print_packet(PACKET packet)
+void print_packet_as_bytes(PACKET packet)
 {
 	// convert to bytes
 	BYTE *discovery_packet_bytes = packet_to_bytes(packet);
@@ -59,4 +82,14 @@ void print_packet(PACKET packet)
 		printf("%02x ", discovery_packet_bytes[i]);
 	}
 	printf("\n");
+}
+
+void print_packet(PACKET packet)
+{
+	printf("packet: \n");
+	printf("source ip: %d.%d.%d.%d\n", packet.source_ip.octet[0], packet.source_ip.octet[1], packet.source_ip.octet[2], packet.source_ip.octet[3]);
+	printf("destination ip: %d.%d.%d.%d\n", packet.destination_ip.octet[0], packet.destination_ip.octet[1], packet.destination_ip.octet[2], packet.destination_ip.octet[3]);
+	printf("offset: %d\n", packet.offset);
+	printf("mode: %d\n", packet.mode);
+	printf("data: %s\n", packet.data);
 }

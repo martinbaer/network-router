@@ -33,11 +33,13 @@ typedef struct PACKET
 } PACKET;
 
 BYTE *packet_to_bytes(PACKET packet);
+PACKET bytes_to_packet(BYTE *bytes);
 
 PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, char *data);
 
 IP_ADDRESS zero_ip_address();
 
+void print_packet_as_bytes(PACKET packet);
 void print_packet(PACKET packet);
 
 #endif
