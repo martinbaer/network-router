@@ -28,22 +28,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+// typedef struct IP_ADDRESS_WITH_CIDR
+// {
+// 	IP_ADDRESS ip_address;
+// 	unsigned char cidr;
+// } IP_ADDRESS_WITH_CIDR;
+// typedef struct IP_ADDRESS
+// {
+// 	unsigned char octet[4];
+// } IP_ADDRESS;
+// parse from form e.g. 168.0.0.1/24
 IP_ADDRESS_WITH_CIDR parse_ip_address(char *ip_address_str)
 {
-	IP_ADDRESS_WITH_CIDR ip_address;
-	// break up into octets
-	char *octet = strtok(ip_address_str, ".");
-	int i = 0;
-	while (octet != NULL)
+	IP_ADDRESS_WITH_CIDR result;
+	int octets[4];
+	int cidr;
+
+	// sscanf returns the number of successfully read items
+	if (sscanf(ip_address_str, "%d.%d.%d.%d/%d", &octets[0], &octets[1], &octets[2], &octets[3], &cidr) != 5)
 	{
-		ip_address.ip_address.octet[i] = atoi(octet);
-		octet = strtok(NULL, ".");
-		i++;
+		exit(EXIT_FAILURE);
 	}
-	// get cidr
-	char *cidr = strtok(ip_address_str, "/");
-	ip_address.cidr = atoi(cidr);
-	return ip_address;
+
+	for (int i = 0; i < 4; ++i)
+	{
+		result.ip_address.octet[i] = octets[i];
+	}
+
+	result.cidr = cidr;
+	return result;
 }
 
 SWITCH parse_command_line(int argc, char *argv[])
@@ -103,5 +116,14 @@ SWITCH parse_command_line(int argc, char *argv[])
 	sw.latitude = atoi(argv[argc - 2]);
 	// get longitude
 	sw.longitude = atoi(argv[argc - 1]);
+
+	// set num_assigned_global_ips and num_assigned_local_ips to 0
+	sw.num_assigned_global_ips = 0;
+	sw.num_assigned_local_ips = 0;
+
+	// set max_num_assigned_global_ips and max_num_assigned_local_ips
+	// 2 ^ (32 - CIDR)
+	sw.max_num_assigned_global_ips = (1 << (32 - sw.global_ip.cidr)) - 3;
+	sw.max_num_assigned_local_ips = (1 << (32 - sw.local_ip.cidr)) - 3;
 	return sw;
 }

@@ -54,7 +54,7 @@ PACKET bytes_to_packet(BYTE *bytes)
 	result.destination_ip = bytes_to_ip_address(bytes + 4);
 	memcpy(&result.offset, bytes + 8, 3);
 	memcpy(&result.mode, bytes + 11, 1);
-	result.data = bytes + 12;
+	result.data = (char *)bytes + 12;
 	return result;
 }
 
@@ -67,6 +67,18 @@ PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int 
 	result.mode = mode;
 	result.data = data;
 	return result;
+}
+
+void print_bytes(BYTE *bytes)
+{
+	printf("bytes: \n");
+	for (int i = 0; i < 12; i++)
+	{
+		if (i % 4 == 0)
+			printf("\n");
+		printf("%02x ", bytes[i]);
+	}
+	printf("\n");
 }
 
 void print_packet_as_bytes(PACKET packet)

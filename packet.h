@@ -41,5 +41,6 @@ IP_ADDRESS zero_ip_address();
 
 void print_packet_as_bytes(PACKET packet);
 void print_packet(PACKET packet);
+void print_bytes(BYTE *bytes);
 
 #endif

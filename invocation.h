@@ -21,6 +21,10 @@ typedef struct SWITCH
 	SWITCH_TYPE type;
 	IP_ADDRESS_WITH_CIDR local_ip;
 	IP_ADDRESS_WITH_CIDR global_ip;
+	int num_assigned_global_ips;
+	int max_num_assigned_global_ips;
+	int num_assigned_local_ips;
+	int max_num_assigned_local_ips;
 	unsigned short latitude;
 	unsigned short longitude;
 } SWITCH;
