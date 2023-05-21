@@ -15,6 +15,8 @@
 #define LOCALHOST "127.0.0.1"
 
 IP_ADDRESS n_higher_ip_address(IP_ADDRESS ip_address, int n);
+IP_ADDRESS allocate_global_ip_address();
+IP_ADDRESS allocate_local_ip_address();
 
 // 	If the switch is able to connect to the port given in the connect command, it (referred to as the client switch)
 // will engage in the Greeting Protocol with the switch it connected to (referred to as the host switch). In the
@@ -62,14 +64,17 @@ int create_outgoing_connection(int port_number)
 void *greet_client_switch(void *arg)
 {
 	int socket_fd = *(int *)arg;
+
+	// 4 bytes of 0
+	BYTE *empty_assigned_ip = malloc(4);
+	memset(empty_assigned_ip, 0, 4);
+
 	// receive discovery packet
 	BYTE buffer[TCP_BUFFER_SIZE];
-
 	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("recv failed");
 	}
-
 	PACKET discovery_packet = bytes_to_packet(buffer);
 	if (discovery_packet.mode != DISCOVER)
 	{
@@ -79,9 +84,32 @@ void *greet_client_switch(void *arg)
 	}
 
 	// send offer packet
-	PACKET offer_packet = new_packet(this_switch.global_ip.ip_address, zero_ip_address(), 0, OFFER, NULL);
+	IP_ADDRESS assigned_ip = allocate_global_ip_address();
+	BYTE *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
+	PACKET offer_packet = new_packet(this_switch.global_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
 	BYTE *offer_packet_bytes = packet_to_bytes(offer_packet);
 	if (send(socket_fd, offer_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("send failed");
+	}
+
+	// receive request packet
+	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("recv failed");
+	}
+	PACKET request_packet = bytes_to_packet(buffer);
+	if (request_packet.mode != REQUEST)
+	{
+		// end connection
+		close(socket_fd);
+		return NULL;
+	}
+
+	// send acknowledgment packet
+	PACKET acknowledgment_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
+	BYTE *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
+	if (send(socket_fd, acknowledgment_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
 	}
@@ -95,12 +123,14 @@ void *greet_host_switch(void *arg)
 	int port_number = *(int *)arg;
 
 	int socket_fd = create_outgoing_connection(port_number);
-	// send discovery packet
 
-	PACKET discovery_packet = new_packet(zero_ip_address(), zero_ip_address(), 0, DISCOVER, NULL);
+	// 4 bytes of 0
+	BYTE *empty_assigned_ip = malloc(4);
+	memset(empty_assigned_ip, 0, 4);
+
+	// send discovery packet
+	PACKET discovery_packet = new_packet(zero_ip_address(), zero_ip_address(), 0, DISCOVER, empty_assigned_ip);
 	BYTE *discovery_packet_bytes = packet_to_bytes(discovery_packet);
-
-	// send discovery packet
 	if (send(socket_fd, discovery_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
@@ -112,7 +142,6 @@ void *greet_host_switch(void *arg)
 	{
 		perror("recv failed");
 	}
-
 	PACKET offer_packet = bytes_to_packet(buffer);
 	if (offer_packet.mode != OFFER)
 	{
@@ -121,7 +150,26 @@ void *greet_host_switch(void *arg)
 		return NULL;
 	}
 
-	print_packet(offer_packet);
+	// send request packet
+	PACKET request_packet = new_packet(zero_ip_address(), offer_packet.source_ip, 0, REQUEST, offer_packet.data);
+	BYTE *request_packet_bytes = packet_to_bytes(request_packet);
+	if (send(socket_fd, request_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("send failed");
+	}
+
+	// receive acknowledgment packet
+	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("recv failed");
+	}
+	PACKET acknowledgment_packet = bytes_to_packet(buffer);
+	if (acknowledgment_packet.mode != ACKNOWLEDGE)
+	{
+		// end connection
+		close(socket_fd);
+		return NULL;
+	}
 
 	all_connections.num_connections++;
 	return NULL;
@@ -129,11 +177,6 @@ void *greet_host_switch(void *arg)
 
 void listen_for_commands(void *arg)
 {
-	IP_ADDRESS n_higher = n_higher_ip_address(this_switch.global_ip.ip_address, 301);
-	for (int i = 0; i < 4; i++)
-	{
-		printf("%d.", n_higher.octet[i]);
-	}
 
 	char command[COMMAND_BUFFER_SIZE];
 	int port_number;
@@ -208,29 +251,15 @@ IP_ADDRESS n_higher_ip_address(IP_ADDRESS ip_address, int n)
 	return new_ip;
 }
 
-// // The IP address allocated to the adapter/client switch by the host switch during the Greeting protocol is calculated in accordance with RFCs 1518 and 1519. The host switch will pick the smallest available IP to allocate to each incoming connection. For example, if an adapter were to connect to a mixed switch with the local IP 192.168.0.1/24 and that switch already had two other adapters connected to it, then this new adapter would be allocated the IP address 192.168.0.4 (as the first two adapters take 192.168.0.2 and 192.168.0.3 respec- tively). Similarly, if a global switch were to connect to a mixed switch with the global IP 130.102.72.01/24 and that switch already had seven other switches connected to it, then this new switch would be allocated the IP address 130.102.72.8. Both of these switches can support a maximum of 254 connections due to its CIDR of 24. If all connections are taken, then the switch will stop responding to incoming connections.
-// IP_ADDRESS allocate_global_ip_address()
-// {
-// 	// This will keep track of the next IP to be assigned.
-// 	static int ip_counter = ; // start at 2 because 0 is reserved for network address and 1 is reserved for gateway address
+// The IP address allocated to the adapter/client switch by the host switch during the Greeting protocol is calculated in accordance with RFCs 1518 and 1519. The host switch will pick the smallest available IP to allocate to each incoming connection. For example, if an adapter were to connect to a mixed switch with the local IP 192.168.0.1/24 and that switch already had two other adapters connected to it, then this new adapter would be allocated the IP address 192.168.0.4 (as the first two adapters take 192.168.0.2 and 192.168.0.3 respec- tively). Similarly, if a global switch were to connect to a mixed switch with the global IP 130.102.72.01/24 and that switch already had seven other switches connected to it, then this new switch would be allocated the IP address 130.102.72.8. Both of these switches can support a maximum of 254 connections due to its CIDR of 24. If all connections are taken, then the switch will stop responding to incoming connections.
+IP_ADDRESS allocate_global_ip_address()
+{
+	IP_ADDRESS ip_address = n_higher_ip_address(this_switch.global_ip.ip_address, ++this_switch.num_assigned_global_ips);
+	return ip_address;
+}
 
-// 	// Check if the switch has reached its maximum number of assignments.
-// 	if (this_switch.num_assigned_local_ips >= this_switch.max_num_assigned_local_ips)
-// 	{
-// 		// This switch is full. It cannot assign more IPs. Log the error or handle it appropriately.
-// 		printf("Error: Maximum number of IP assignments reached for this switch. Cannot assign more IPs.\n");
-// 		exit(1); // Or handle error appropriately
-// 	}
-
-// 	// Calculate the next IP to be assigned.
-// 	IP_ADDRESS next_ip = this_switch.local_ip.ip_address;
-// 	next_ip.octet[3] = ip_counter;
-
-// 	// Increment the counter for the next assignment.
-// 	ip_counter++;
-
-// 	// Increase the count of assigned IPs.
-// 	this_switch.num_assigned_local_ips++;
-
-// 	return next_ip;
-// }
+IP_ADDRESS allocate_local_ip_address()
+{
+	IP_ADDRESS ip_address = n_higher_ip_address(this_switch.local_ip.ip_address, ++this_switch.num_assigned_local_ips);
+	return ip_address;
+}

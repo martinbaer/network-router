@@ -26,13 +26,15 @@ BYTE *ip_address_to_bytes(IP_ADDRESS ip_address)
 
 BYTE *packet_to_bytes(PACKET packet)
 {
-	BYTE *result = malloc(12 + packet.offset);
-	// TODO: i think some cases the offset will be 0 but the data will be non-null
+	int data_length = 0;
+	if (packet.mode == DISCOVER || packet.mode == OFFER || packet.mode == REQUEST || packet.mode == ACKNOWLEDGE)
+		data_length += 4;
+	BYTE *result = malloc(12 + data_length);
 	memcpy(result, ip_address_to_bytes(packet.source_ip), 4);
 	memcpy(result + 4, ip_address_to_bytes(packet.destination_ip), 4);
 	memcpy(result + 8, &packet.offset, 3);
 	memcpy(result + 11, &packet.mode, 1);
-	memcpy(result + 12, packet.data, packet.offset);
+	memcpy(result + 12, packet.data, data_length);
 	return result;
 }
 
@@ -54,11 +56,11 @@ PACKET bytes_to_packet(BYTE *bytes)
 	result.destination_ip = bytes_to_ip_address(bytes + 4);
 	memcpy(&result.offset, bytes + 8, 3);
 	memcpy(&result.mode, bytes + 11, 1);
-	result.data = (char *)bytes + 12;
+	result.data = bytes + 12;
 	return result;
 }
 
-PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, char *data)
+PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data)
 {
 	PACKET result;
 	result.source_ip = source_ip;
@@ -69,25 +71,17 @@ PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int 
 	return result;
 }
 
-void print_bytes(BYTE *bytes)
-{
-	printf("bytes: \n");
-	for (int i = 0; i < 12; i++)
-	{
-		if (i % 4 == 0)
-			printf("\n");
-		printf("%02x ", bytes[i]);
-	}
-	printf("\n");
-}
-
 void print_packet_as_bytes(PACKET packet)
 {
 	// convert to bytes
 	BYTE *discovery_packet_bytes = packet_to_bytes(packet);
+	// get length
+	int length = 12;
+	if (packet.mode == DISCOVER || packet.mode == OFFER || packet.mode == REQUEST || packet.mode == ACKNOWLEDGE)
+		length += 4;
 	// print it
 	printf("packet: \n");
-	for (int i = 0; i < 12; i++)
+	for (int i = 0; i < length; i++)
 	{
 		if (i % 4 == 0)
 			printf("\n");

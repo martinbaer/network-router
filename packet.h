@@ -29,14 +29,14 @@ typedef struct PACKET
 	IP_ADDRESS destination_ip; // 4 bytes
 	unsigned int offset;	   // 3 bytes
 	MODE mode;				   // 1 byte
-	char *data;				   // rest of packet
+	BYTE *data;				   // rest of packet
 } PACKET;
 
 BYTE *packet_to_bytes(PACKET packet);
 PACKET bytes_to_packet(BYTE *bytes);
 
-PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, char *data);
-
+PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data);
+BYTE *ip_address_to_bytes(IP_ADDRESS ip_address);
 IP_ADDRESS zero_ip_address();
 
 void print_packet_as_bytes(PACKET packet);
