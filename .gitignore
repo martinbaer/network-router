@@ -5,7 +5,11 @@ RUSHBSwitch
 git.sh
 
 *.bout
+*.b2out
+*.b2in
+*.aout
 
 __pycache__
 */__pycache__
 */*/__pycache__
+scapy

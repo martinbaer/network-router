@@ -88,6 +88,7 @@ void print_packet_as_bytes(PACKET packet)
 		printf("%02x ", discovery_packet_bytes[i]);
 	}
 	printf("\n");
+	fflush(stdout);
 }
 
 void print_packet(PACKET packet)
@@ -98,4 +99,5 @@ void print_packet(PACKET packet)
 	printf("offset: %d\n", packet.offset);
 	printf("mode: %d\n", packet.mode);
 	printf("data: %s\n", packet.data);
+	fflush(stdout);
 }
