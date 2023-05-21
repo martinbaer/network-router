@@ -12,30 +12,37 @@ PORT open_port(int socket_type)
 {
 	PORT result;
 
-	struct addrinfo hints, *res;
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = socket_type;
-	hints.ai_flags = AI_PASSIVE;
+	struct sockaddr_in server_addr;
 
-	getaddrinfo(NULL, "0", &hints, &res);
-
-	result.socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-
-	bind(result.socket, res->ai_addr, res->ai_addrlen);
-
-	struct sockaddr_in sin;
-	socklen_t len = sizeof(sin);
-	if (getsockname(result.socket, (struct sockaddr *)&sin, &len) == -1)
+	// Create the UDP socket
+	result.socket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (result.socket < 0)
 	{
-		fprintf(stderr, "getsockname error\n");
-		exit(1);
+		perror("Cannot open socket");
+	}
+
+	// Bind the socket to a specific port
+	memset((char *)&server_addr, 0, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	server_addr.sin_port = htons(0);
+
+	if (bind(result.socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+	{
+		perror("Cannot bind socket");
+	}
+
+	// Get the port number
+	struct sockaddr_in sin;
+	socklen_t sin_len = sizeof(sin);
+	if (getsockname(result.socket, (struct sockaddr *)&sin, &sin_len) == -1)
+	{
+		perror("getsockname");
 	}
 	else
 	{
 		result.port = ntohs(sin.sin_port);
 	}
 
-	freeaddrinfo(res);
 	return result;
 }

@@ -23,8 +23,9 @@ void *listen_for_adaptor_connections(void *arg)
 		socklen_t client_addr_len = sizeof(client_addr);
 		BYTE buffer[UDP_BUFFER_SIZE];
 		memset(buffer, 0, UDP_BUFFER_SIZE);
+		int recv_len;
 		// receive DISCOVER packet
-		if (recvfrom(socket_fd, buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
+		if ((recv_len = recvfrom(socket_fd, buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len)) < 0)
 		{
 			perror("recvfrom failed");
 		}
@@ -38,13 +39,14 @@ void *listen_for_adaptor_connections(void *arg)
 		// send OFFER packet
 		IP_ADDRESS assigned_ip = allocate_local_ip_address();
 		BYTE *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
-		PACKET offer_packet = new_packet(this_switch.global_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
+		PACKET offer_packet = new_packet(this_switch.local_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
 		BYTE *offer_packet_bytes = packet_to_bytes(offer_packet);
+
 		if (sendto(socket_fd, offer_packet_bytes, 16, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 		{
 			perror("sendto failed");
 		}
-		perror("sent offer");
+		// perror("sent offer");
 		// receive REQUEST packet
 		memset(buffer, 0, UDP_BUFFER_SIZE);
 		if (recvfrom(socket_fd, buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
@@ -57,7 +59,7 @@ void *listen_for_adaptor_connections(void *arg)
 			continue;
 		}
 		// send ACKNOWLEDGE packet
-		PACKET acknowledgment_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
+		PACKET acknowledgment_packet = new_packet(this_switch.local_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
 		BYTE *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
 		if (sendto(socket_fd, acknowledgment_packet_bytes, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 		{
