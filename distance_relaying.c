@@ -12,7 +12,7 @@
 
 #define TCP_BUFFER_SIZE 1500
 
-KNOWN_SWITCH create_known_switch(int socket_fd, IP_ADDRESS ip_address, int new_switch_distance);
+KNOWN_SWITCH create_known_switch(int socket_fd, IP_ADDRESS ip_address, int new_switch_distance, IP_ADDRESS next_hop, int next_hop_socket_fd);
 
 bool known_switch_equals(KNOWN_SWITCH switch1, KNOWN_SWITCH switch2)
 {
@@ -55,8 +55,6 @@ void relay_distance(KNOWN_SWITCH sender)
 			for (int j = 0; j < 4; j++)
 			{
 				data_field[j] = sender.ip_address.octet[j];
-				printf("%d\n", data_field[j]);
-				fflush(stdout);
 			}
 			// create packet
 			// PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data);
@@ -77,24 +75,31 @@ int calculate_distance(XY_FIELD location1, XY_FIELD location2)
 	return (int)sqrt(pow(location1.x - location2.x, 2) + pow(location1.y - location2.y, 2));
 }
 
-KNOWN_SWITCH add_new_known_switch(int socket_fd, IP_ADDRESS ip_address, int new_switch_distance)
+KNOWN_SWITCH add_new_known_switch(int socket_fd, IP_ADDRESS ip_address, int new_switch_distance, IP_ADDRESS next_hop, int next_hop_socket_fd)
 {
-	KNOWN_SWITCH new_switch = create_known_switch(socket_fd, ip_address, new_switch_distance);
+	KNOWN_SWITCH new_switch = create_known_switch(socket_fd, ip_address, new_switch_distance, next_hop, next_hop_socket_fd);
 	known_switches = realloc(known_switches, sizeof(KNOWN_SWITCH) * (num_known_switches + 1));
 	known_switches[num_known_switches] = new_switch;
 	num_known_switches++;
 	return new_switch;
 }
 
-KNOWN_SWITCH create_known_switch(int socket_fd, IP_ADDRESS ip_address, int new_switch_distance)
+KNOWN_SWITCH create_known_switch(int socket_fd, IP_ADDRESS ip_address, int new_switch_distance, IP_ADDRESS next_hop, int next_hop_socket_fd)
 {
 	KNOWN_SWITCH result;
 	result.socket_fd = socket_fd;
 	result.distance = new_switch_distance;
+	result.time_of_last_ready = time(NULL) - 10;
+	result.next_hop_socket_fd = next_hop_socket_fd;
 	// copy ip address
 	for (int i = 0; i < 4; i++)
 	{
 		result.ip_address.octet[i] = ip_address.octet[i];
+	}
+	// set next hop ip address
+	for (int i = 0; i < 4; i++)
+	{
+		result.next_hop.octet[i] = next_hop.octet[i];
 	}
 	// calulcate euclidean distance from this_switch.latitude and this_switch.longitude
 	return result;

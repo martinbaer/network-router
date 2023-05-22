@@ -9,18 +9,21 @@
 #include "open_port.h"
 #include "packet.h"
 #include "connect_switch.h"
-#include "connect_adaptor.h"
+#include "connect_adapter.h"
 
 #include "globals.h"
 
 SWITCH this_switch = {0};
 int num_known_switches = 0;
 KNOWN_SWITCH *known_switches = NULL;
+int num_known_adapters = 0;
+KNOWN_ADAPTOR *known_adapters = NULL;
 
 int main(int argc, char *argv[])
 {
 	this_switch = parse_command_line(argc, argv);
 	known_switches = malloc(sizeof(KNOWN_SWITCH) * num_known_switches);
+	known_adapters = malloc(sizeof(KNOWN_ADAPTOR) * num_known_adapters);
 
 	PORT tcp_port, udp_port;
 	if (this_switch.type == LOCAL || this_switch.type == MIXED)
@@ -53,7 +56,7 @@ int main(int argc, char *argv[])
 	{
 		int *socket_fd_heap = malloc(sizeof(int));
 		*socket_fd_heap = udp_port.socket;
-		pthread_create(&listen_for_adaptor_connections_thread, NULL, listen_for_adaptor_connections, socket_fd_heap);
+		pthread_create(&listen_for_adaptor_connections_thread, NULL, listen_for_adapter_connections, socket_fd_heap);
 	}
 
 	// wait for threads to finish

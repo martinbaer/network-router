@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #include "packet.h"
 #include "ip_allocation.h"
@@ -11,7 +12,7 @@
 
 #define UDP_BUFFER_SIZE 2048
 
-void *listen_for_adaptor_connections(void *arg)
+void *listen_for_adapter_connections(void *arg)
 {
 	// UDP socket file descriptor
 	int socket_fd = *(int *)arg;
@@ -65,6 +66,19 @@ void *listen_for_adaptor_connections(void *arg)
 		{
 			perror("sendto failed");
 		}
+
+		// add to known adaptors
+		known_adapters = realloc(known_adapters, sizeof(KNOWN_ADAPTOR) * (num_known_adapters + 1));
+		known_adapters[num_known_adapters].socket_fd = socket_fd;
+		known_adapters[num_known_adapters].client_addr = client_addr;
+		known_adapters[num_known_adapters].client_addr_len = client_addr_len;
+		// copy assigned_ip_bytes into known_adapters[num_known_adapters].assigned_ip
+		known_adapters[num_known_adapters].ip_address.octet[0] = assigned_ip_bytes[0];
+		known_adapters[num_known_adapters].ip_address.octet[1] = assigned_ip_bytes[1];
+		known_adapters[num_known_adapters].ip_address.octet[2] = assigned_ip_bytes[2];
+		known_adapters[num_known_adapters].ip_address.octet[3] = assigned_ip_bytes[3];
+		known_adapters[num_known_adapters].time_of_last_ready = time(NULL) - 10;
+		num_known_adapters++;
 	}
 
 	return NULL;

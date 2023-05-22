@@ -5,6 +5,8 @@
 
 #include "packet.h"
 
+#define MAX_DATA_LENGTH 1488
+
 // IP_ADDRESS source_ip;	   // 4 bytes
 // IP_ADDRESS destination_ip; // 4 bytes
 // unsigned int offset;	   // 3 bytes
@@ -64,6 +66,8 @@ BYTE *packet_to_bytes(PACKET packet)
 		data_length = 4;
 	if (packet.mode == DISTANCE)
 		data_length = 8;
+	if (packet.mode == DATA)
+		data_length = MAX_DATA_LENGTH;
 	BYTE *result = malloc(12 + data_length);
 	memcpy(result, ip_address_to_bytes(packet.source_ip), 4);
 	memcpy(result + 4, ip_address_to_bytes(packet.destination_ip), 4);

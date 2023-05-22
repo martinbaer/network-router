@@ -133,7 +133,7 @@ void *greet_client_switch(void *arg)
 
 	// add to list of known switches
 	int new_switch_distance = calculate_distance(client_location, this_switch.location);
-	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, assigned_ip, new_switch_distance);
+	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, assigned_ip, new_switch_distance, assigned_ip, socket_fd);
 
 	// send location packet
 	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
@@ -146,6 +146,9 @@ void *greet_client_switch(void *arg)
 
 	// relay distance
 	relay_distance(new_known_switch);
+
+	// listen and forward
+	listen_and_forward(new_known_switch);
 
 	return NULL;
 }
@@ -231,7 +234,7 @@ void *greet_host_switch(void *arg)
 
 	// add to list of known switches
 	int new_switch_distance = calculate_distance(host_location, this_switch.location);
-	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance);
+	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance, acknowledgment_packet.source_ip, socket_fd);
 
 	// relay distance
 	relay_distance(new_known_switch);
