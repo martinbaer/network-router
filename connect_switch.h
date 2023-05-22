@@ -3,7 +3,7 @@
 
 #include "packet.h"
 
-void listen_for_commands(void *arg);
-void listen_for_switch_connections(void *arg);
+void *listen_for_commands(void *arg);
+void *listen_for_switch_connections(void *arg);
 
 #endif

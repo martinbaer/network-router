@@ -32,11 +32,23 @@ typedef struct PACKET
 	BYTE *data;				   // rest of packet
 } PACKET;
 
+typedef struct XY_FIELD
+{
+	unsigned short x;
+	unsigned short y;
+} XY_FIELD;
+
+XY_FIELD bytes_to_xy_field(BYTE *bytes);
+BYTE *xy_field_to_bytes(XY_FIELD xy_field);
+
 BYTE *packet_to_bytes(PACKET packet);
 PACKET bytes_to_packet(BYTE *bytes);
 
+BYTE *location_to_bytes(unsigned short latitude, unsigned short longitude);
+
 PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data);
 BYTE *ip_address_to_bytes(IP_ADDRESS ip_address);
+IP_ADDRESS bytes_to_ip_address(BYTE *bytes);
 IP_ADDRESS zero_ip_address();
 
 void print_packet_as_bytes(PACKET packet);

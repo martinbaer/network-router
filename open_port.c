@@ -15,7 +15,7 @@ PORT open_port(int socket_type)
 	struct sockaddr_in server_addr;
 
 	// Create the UDP socket
-	result.socket = socket(AF_INET, SOCK_DGRAM, 0);
+	result.socket = socket(AF_INET, socket_type, 0);
 	if (result.socket < 0)
 	{
 		perror("Cannot open socket");

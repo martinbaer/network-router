@@ -8,9 +8,9 @@
 #include <arpa/inet.h>
 
 #include "globals.h"
-
+#include "connect_switch.h"
 #define COMMAND_BUFFER_SIZE 50
-#define TCP_BUFFER_SIZE 1000
+#define TCP_BUFFER_SIZE 1500
 
 #define LOCALHOST "127.0.0.1"
 
@@ -114,6 +114,31 @@ void *greet_client_switch(void *arg)
 		perror("send failed");
 	}
 
+	// receive location packet
+	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("recv failed");
+	}
+	PACKET client_location_packet = bytes_to_packet(buffer);
+	if (client_location_packet.mode != LOCATION)
+	{
+		// end connection
+		close(socket_fd);
+		return NULL;
+	}
+	XY_FIELD client_location = bytes_to_xy_field(client_location_packet.data);
+
+	// send location packet
+	XY_FIELD this_switch_location = {this_switch.latitude, this_switch.longitude};
+	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch_location);
+
+	PACKET this_switch_location_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, LOCATION, this_switch_location_bytes);
+	BYTE *this_switch_location_packet_bytes = packet_to_bytes(this_switch_location_packet);
+	if (send(socket_fd, this_switch_location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("send failed");
+	}
+
 	return NULL;
 }
 
@@ -171,6 +196,31 @@ void *greet_host_switch(void *arg)
 		close(socket_fd);
 		return NULL;
 	}
+
+	// send location packet
+	IP_ADDRESS my_assigned_ip = bytes_to_ip_address(acknowledgment_packet.data);
+	XY_FIELD this_switch_location = {this_switch.latitude, this_switch.longitude};
+	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch_location);
+	PACKET location_packet = new_packet(my_assigned_ip, acknowledgment_packet.source_ip, 0, LOCATION, this_switch_location_bytes);
+	BYTE *location_packet_bytes = packet_to_bytes(location_packet);
+	if (send(socket_fd, location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("send failed");
+	}
+
+	// receive location packet
+	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("recv failed");
+	}
+	PACKET host_location_packet = bytes_to_packet(buffer);
+	if (host_location_packet.mode != LOCATION)
+	{
+		// end connection
+		close(socket_fd);
+		return NULL;
+	}
+	XY_FIELD host_location = bytes_to_xy_field(host_location_packet.data);
 
 	all_connections.num_connections++;
 	return NULL;

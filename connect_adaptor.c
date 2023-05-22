@@ -9,7 +9,7 @@
 #include "ip_allocation.h"
 #include "globals.h"
 
-#define UDP_BUFFER_SIZE 1024
+#define UDP_BUFFER_SIZE 2048
 
 void *listen_for_adaptor_connections(void *arg)
 {
