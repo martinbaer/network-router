@@ -113,9 +113,9 @@ SWITCH parse_command_line(int argc, char *argv[])
 		sw.global_ip = parse_ip_address(argv[2]);
 	}
 	// get latitude
-	sw.latitude = atoi(argv[argc - 2]);
+	sw.location.x = atoi(argv[argc - 2]);
 	// get longitude
-	sw.longitude = atoi(argv[argc - 1]);
+	sw.location.y = atoi(argv[argc - 1]);
 
 	// set num_assigned_global_ips and num_assigned_local_ips to 0
 	sw.num_assigned_global_ips = 0;

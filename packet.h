@@ -1,6 +1,8 @@
 #ifndef PACKET_H
 #define PACKET_H
 
+#include <stdbool.h>
+
 typedef unsigned char BYTE;
 
 typedef enum MODE
@@ -50,6 +52,8 @@ PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int 
 BYTE *ip_address_to_bytes(IP_ADDRESS ip_address);
 IP_ADDRESS bytes_to_ip_address(BYTE *bytes);
 IP_ADDRESS zero_ip_address();
+
+bool ip_address_equals(IP_ADDRESS ip_address1, IP_ADDRESS ip_address2);
 
 void print_packet_as_bytes(PACKET packet);
 void print_packet(PACKET packet);

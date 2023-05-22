@@ -61,7 +61,9 @@ BYTE *packet_to_bytes(PACKET packet)
 {
 	int data_length = 0;
 	if (packet.mode == DISCOVER || packet.mode == OFFER || packet.mode == REQUEST || packet.mode == ACKNOWLEDGE || packet.mode == LOCATION)
-		data_length += 4;
+		data_length = 4;
+	if (packet.mode == DISTANCE)
+		data_length = 8;
 	BYTE *result = malloc(12 + data_length);
 	memcpy(result, ip_address_to_bytes(packet.source_ip), 4);
 	memcpy(result + 4, ip_address_to_bytes(packet.destination_ip), 4);
@@ -104,6 +106,16 @@ PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int 
 	return result;
 }
 
+bool ip_address_equals(IP_ADDRESS ip_address1, IP_ADDRESS ip_address2)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		if (ip_address1.octet[i] != ip_address2.octet[i])
+			return false;
+	}
+	return true;
+}
+
 void print_packet_as_bytes(PACKET packet)
 {
 	// convert to bytes
@@ -112,6 +124,8 @@ void print_packet_as_bytes(PACKET packet)
 	int length = 12;
 	if (packet.mode == DISCOVER || packet.mode == OFFER || packet.mode == REQUEST || packet.mode == ACKNOWLEDGE || packet.mode == LOCATION)
 		length += 4;
+	if (packet.mode == DISTANCE)
+		length += 8;
 	// print it
 	printf("packet: \n");
 	for (int i = 0; i < length; i++)

@@ -4,14 +4,15 @@
 #include "packet.h"
 #include "invocation.h"
 
-// struct to be shared
-typedef struct ALL_CONNECTIONS
+typedef struct KNOWN_SWITCH
 {
-	// IP_ADDRESS *ip_addresses;
-	int num_connections;
-} ALL_CONNECTIONS;
+	int socket_fd;
+	IP_ADDRESS ip_address;
+	int distance;
+} KNOWN_SWITCH;
 
-extern ALL_CONNECTIONS all_connections;
+extern int num_known_switches;
+extern KNOWN_SWITCH *known_switches;
 
 extern SWITCH this_switch;
 

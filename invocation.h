@@ -25,8 +25,7 @@ typedef struct SWITCH
 	int max_num_assigned_global_ips;
 	int num_assigned_local_ips;
 	int max_num_assigned_local_ips;
-	unsigned short latitude;
-	unsigned short longitude;
+	XY_FIELD location;
 } SWITCH;
 
 SWITCH parse_command_line(int argc, char *argv[]);

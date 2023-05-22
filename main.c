@@ -13,12 +13,14 @@
 
 #include "globals.h"
 
-ALL_CONNECTIONS all_connections = {0};
 SWITCH this_switch = {0};
+int num_known_switches = 0;
+KNOWN_SWITCH *known_switches = NULL;
 
 int main(int argc, char *argv[])
 {
 	this_switch = parse_command_line(argc, argv);
+	known_switches = malloc(sizeof(KNOWN_SWITCH) * num_known_switches);
 
 	PORT tcp_port, udp_port;
 	if (this_switch.type == LOCAL || this_switch.type == MIXED)

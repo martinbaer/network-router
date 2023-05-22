@@ -9,6 +9,9 @@
 
 #include "globals.h"
 #include "connect_switch.h"
+#include "distance_relaying.h"
+#include "data_forwarding.h"
+
 #define COMMAND_BUFFER_SIZE 50
 #define TCP_BUFFER_SIZE 1500
 
@@ -128,16 +131,21 @@ void *greet_client_switch(void *arg)
 	}
 	XY_FIELD client_location = bytes_to_xy_field(client_location_packet.data);
 
-	// send location packet
-	XY_FIELD this_switch_location = {this_switch.latitude, this_switch.longitude};
-	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch_location);
+	// add to list of known switches
+	int new_switch_distance = calculate_distance(client_location, this_switch.location);
+	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, assigned_ip, new_switch_distance);
 
+	// send location packet
+	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
 	PACKET this_switch_location_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, LOCATION, this_switch_location_bytes);
 	BYTE *this_switch_location_packet_bytes = packet_to_bytes(this_switch_location_packet);
 	if (send(socket_fd, this_switch_location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
 	}
+
+	// relay distance
+	relay_distance(new_known_switch);
 
 	return NULL;
 }
@@ -199,8 +207,7 @@ void *greet_host_switch(void *arg)
 
 	// send location packet
 	IP_ADDRESS my_assigned_ip = bytes_to_ip_address(acknowledgment_packet.data);
-	XY_FIELD this_switch_location = {this_switch.latitude, this_switch.longitude};
-	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch_location);
+	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
 	PACKET location_packet = new_packet(my_assigned_ip, acknowledgment_packet.source_ip, 0, LOCATION, this_switch_location_bytes);
 	BYTE *location_packet_bytes = packet_to_bytes(location_packet);
 	if (send(socket_fd, location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
@@ -222,7 +229,16 @@ void *greet_host_switch(void *arg)
 	}
 	XY_FIELD host_location = bytes_to_xy_field(host_location_packet.data);
 
-	all_connections.num_connections++;
+	// add to list of known switches
+	int new_switch_distance = calculate_distance(host_location, this_switch.location);
+	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance);
+
+	// relay distance
+	relay_distance(new_known_switch);
+
+	// listen and forward
+	listen_and_forward(new_known_switch);
+
 	return NULL;
 }
 
