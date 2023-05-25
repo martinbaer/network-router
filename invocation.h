@@ -12,7 +12,7 @@ typedef enum SWITCH_TYPE
 
 typedef struct IP_ADDRESS_WITH_CIDR
 {
-	IP_ADDRESS ip_address;
+	IpAddress ip_address;
 	unsigned char cidr;
 } IP_ADDRESS_WITH_CIDR;
 
@@ -25,7 +25,7 @@ typedef struct SWITCH
 	int max_num_assigned_global_ips;
 	int num_assigned_local_ips;
 	int max_num_assigned_local_ips;
-	XY_FIELD location;
+	Coordinate location;
 } SWITCH;
 
 SWITCH parse_command_line(int argc, char *argv[]);

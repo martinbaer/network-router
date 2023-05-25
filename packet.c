@@ -10,20 +10,20 @@
 // IP_ADDRESS source_ip;	   // 4 bytes
 // IP_ADDRESS destination_ip; // 4 bytes
 // unsigned int offset;	   // 3 bytes
-// MODE mode;				   // 1 byte
+// Mode mode;				   // 1 byte
 // char *data;				   // rest of packet
 
-// typedef unsigned char BYTE;
-// typedef struct XY_FIELD
+// typedef unsigned char Byte;
+// typedef struct Coordinate
 // {
 // 	unsigned short x;
 // 	unsigned short y;
-// } XY_FIELD;
+// } Coordinate;
 // the bytes need to be in network byte order (big endian)
 
-XY_FIELD bytes_to_xy_field(BYTE *bytes)
+Coordinate bytes_to_xy_field(Byte *bytes)
 {
-	XY_FIELD xy_field;
+	Coordinate xy_field;
 
 	// Assuming bytes are in big endian (network byte order)
 	xy_field.x = (bytes[0] << 8) | bytes[1];
@@ -32,9 +32,9 @@ XY_FIELD bytes_to_xy_field(BYTE *bytes)
 	return xy_field;
 }
 
-BYTE *xy_field_to_bytes(XY_FIELD xy_field)
+Byte *xy_field_to_bytes(Coordinate xy_field)
 {
-	BYTE *bytes = (BYTE *)malloc(sizeof(BYTE) * 4);
+	Byte *bytes = (Byte *)malloc(sizeof(Byte) * 4);
 
 	// Convert x and y from host byte order to network byte order
 	bytes[0] = (xy_field.x >> 8) & 0xFF;
@@ -45,21 +45,21 @@ BYTE *xy_field_to_bytes(XY_FIELD xy_field)
 	return bytes;
 }
 
-IP_ADDRESS zero_ip_address()
+IpAddress zero_ip_address()
 {
-	IP_ADDRESS result;
+	IpAddress result;
 	memset(result.octet, 0, 4);
 	return result;
 }
 
-BYTE *ip_address_to_bytes(IP_ADDRESS ip_address)
+Byte *ip_address_to_bytes(IpAddress ip_address)
 {
-	BYTE *result = malloc(4);
+	Byte *result = malloc(4);
 	memcpy(result, &ip_address, 4);
 	return result;
 }
 
-BYTE *packet_to_bytes(PACKET packet)
+Byte *packet_to_bytes(Packet packet)
 {
 	int data_length = 0;
 	if (packet.mode == DISCOVER || packet.mode == OFFER || packet.mode == REQUEST || packet.mode == ACKNOWLEDGE || packet.mode == LOCATION)
@@ -68,7 +68,7 @@ BYTE *packet_to_bytes(PACKET packet)
 		data_length = 8;
 	if (packet.mode == DATA)
 		data_length = MAX_DATA_LENGTH;
-	BYTE *result = malloc(12 + data_length);
+	Byte *result = malloc(12 + data_length);
 	memcpy(result, ip_address_to_bytes(packet.source_ip), 4);
 	memcpy(result + 4, ip_address_to_bytes(packet.destination_ip), 4);
 	memcpy(result + 8, &packet.offset, 3);
@@ -81,16 +81,16 @@ BYTE *packet_to_bytes(PACKET packet)
 // {
 // 	unsigned char octet[4];
 // } IP_ADDRESS;
-IP_ADDRESS bytes_to_ip_address(BYTE *bytes)
+IpAddress bytes_to_ip_address(Byte *bytes)
 {
-	IP_ADDRESS result;
+	IpAddress result;
 	memcpy(&result, bytes, 4);
 	return result;
 }
 
-PACKET bytes_to_packet(BYTE *bytes)
+Packet bytes_to_packet(Byte *bytes)
 {
-	PACKET result;
+	Packet result;
 	result.source_ip = bytes_to_ip_address(bytes);
 	result.destination_ip = bytes_to_ip_address(bytes + 4);
 	memcpy(&result.offset, bytes + 8, 3);
@@ -99,9 +99,9 @@ PACKET bytes_to_packet(BYTE *bytes)
 	return result;
 }
 
-PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data)
+Packet new_packet(IpAddress source_ip, IpAddress destination_ip, unsigned int offset, Mode mode, Byte *data)
 {
-	PACKET result;
+	Packet result;
 	result.source_ip = source_ip;
 	result.destination_ip = destination_ip;
 	result.offset = offset;
@@ -110,7 +110,7 @@ PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int 
 	return result;
 }
 
-bool ip_address_equals(IP_ADDRESS ip_address1, IP_ADDRESS ip_address2)
+bool ip_address_equals(IpAddress ip_address1, IpAddress ip_address2)
 {
 	for (int i = 0; i < 4; i++)
 	{
@@ -120,10 +120,10 @@ bool ip_address_equals(IP_ADDRESS ip_address1, IP_ADDRESS ip_address2)
 	return true;
 }
 
-void print_packet_as_bytes(PACKET packet)
+void print_packet_as_bytes(Packet packet)
 {
 	// convert to bytes
-	BYTE *discovery_packet_bytes = packet_to_bytes(packet);
+	Byte *discovery_packet_bytes = packet_to_bytes(packet);
 	// get length
 	int length = 12;
 	if (packet.mode == DISCOVER || packet.mode == OFFER || packet.mode == REQUEST || packet.mode == ACKNOWLEDGE || packet.mode == LOCATION)
@@ -131,24 +131,48 @@ void print_packet_as_bytes(PACKET packet)
 	if (packet.mode == DISTANCE)
 		length += 8;
 	// print it
-	printf("packet: \n");
+	fprintf(stderr, "packet: \n");
 	for (int i = 0; i < length; i++)
 	{
 		if (i % 4 == 0)
-			printf("\n");
-		printf("%02x ", discovery_packet_bytes[i]);
+			fprintf(stderr, "\n");
+		fprintf(stderr, "%02x ", discovery_packet_bytes[i]);
 	}
-	printf("\n");
+	fprintf(stderr, "\n");
 	fflush(stdout);
 }
 
-void print_packet(PACKET packet)
+void print_packet(Packet packet)
 {
-	printf("packet: \n");
-	printf("source ip: %d.%d.%d.%d\n", packet.source_ip.octet[0], packet.source_ip.octet[1], packet.source_ip.octet[2], packet.source_ip.octet[3]);
-	printf("destination ip: %d.%d.%d.%d\n", packet.destination_ip.octet[0], packet.destination_ip.octet[1], packet.destination_ip.octet[2], packet.destination_ip.octet[3]);
-	printf("offset: %d\n", packet.offset);
-	printf("mode: %d\n", packet.mode);
-	printf("data: %s\n", packet.data);
-	fflush(stdout);
+	// printf("packet: \n");
+	// printf("source ip: %d.%d.%d.%d\n", packet.source_ip.octet[0], packet.source_ip.octet[1], packet.source_ip.octet[2], packet.source_ip.octet[3]);
+	// printf("destination ip: %d.%d.%d.%d\n", packet.destination_ip.octet[0], packet.destination_ip.octet[1], packet.destination_ip.octet[2], packet.destination_ip.octet[3]);
+	// printf("offset: %d\n", packet.offset);
+	// printf("mode: %d\n", packet.mode);
+	// printf("data: %s\n", packet.data);
+	// fflush(stdout);
+	// stderr
+	fprintf(stderr, "packet: \n");
+	fprintf(stderr, "source ip: %d.%d.%d.%d\n", packet.source_ip.octet[0], packet.source_ip.octet[1], packet.source_ip.octet[2], packet.source_ip.octet[3]);
+	fprintf(stderr, "destination ip: %d.%d.%d.%d\n", packet.destination_ip.octet[0], packet.destination_ip.octet[1], packet.destination_ip.octet[2], packet.destination_ip.octet[3]);
+	fprintf(stderr, "offset: %d\n", packet.offset);
+	fprintf(stderr, "mode: %d\n", packet.mode);
+	fprintf(stderr, "data: %s\n", packet.data);
+	fflush(stderr);
+}
+
+void print_ip_address(IpAddress ip_address)
+{
+	fprintf(stderr, "ip address: %d.%d.%d.%d\n", ip_address.octet[0], ip_address.octet[1], ip_address.octet[2], ip_address.octet[3]);
+	fflush(stderr);
+}
+
+IpAddress new_ip_address(int octet1, int octet2, int octet3, int octet4)
+{
+	IpAddress result;
+	result.octet[0] = octet1;
+	result.octet[1] = octet2;
+	result.octet[2] = octet3;
+	result.octet[3] = octet4;
+	return result;
 }

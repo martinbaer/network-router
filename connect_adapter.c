@@ -22,7 +22,7 @@ void *listen_for_adapter_connections(void *arg)
 	{
 		struct sockaddr_in client_addr;
 		socklen_t client_addr_len = sizeof(client_addr);
-		BYTE buffer[UDP_BUFFER_SIZE];
+		Byte buffer[UDP_BUFFER_SIZE];
 		memset(buffer, 0, UDP_BUFFER_SIZE);
 		int recv_len;
 		// receive DISCOVER packet
@@ -30,7 +30,7 @@ void *listen_for_adapter_connections(void *arg)
 		{
 			perror("recvfrom failed");
 		}
-		PACKET discover_packet = bytes_to_packet(buffer);
+		Packet discover_packet = bytes_to_packet(buffer);
 		if (discover_packet.mode != DISCOVER)
 		{
 			continue;
@@ -38,10 +38,10 @@ void *listen_for_adapter_connections(void *arg)
 		// print discover packet
 		print_packet(discover_packet);
 		// send OFFER packet
-		IP_ADDRESS assigned_ip = allocate_local_ip_address();
-		BYTE *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
-		PACKET offer_packet = new_packet(this_switch.local_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
-		BYTE *offer_packet_bytes = packet_to_bytes(offer_packet);
+		IpAddress assigned_ip = allocate_local_ip_address();
+		Byte *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
+		Packet offer_packet = new_packet(this_switch.local_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
+		Byte *offer_packet_bytes = packet_to_bytes(offer_packet);
 
 		if (sendto(socket_fd, offer_packet_bytes, 16, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 		{
@@ -54,21 +54,21 @@ void *listen_for_adapter_connections(void *arg)
 		{
 			perror("recvfrom failed");
 		}
-		PACKET request_packet = bytes_to_packet(buffer);
+		Packet request_packet = bytes_to_packet(buffer);
 		if (request_packet.mode != REQUEST)
 		{
 			continue;
 		}
 		// send ACKNOWLEDGE packet
-		PACKET acknowledgment_packet = new_packet(this_switch.local_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
-		BYTE *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
+		Packet acknowledgment_packet = new_packet(this_switch.local_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
+		Byte *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
 		if (sendto(socket_fd, acknowledgment_packet_bytes, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 		{
 			perror("sendto failed");
 		}
 
 		// add to known adaptors
-		known_adapters = realloc(known_adapters, sizeof(KNOWN_ADAPTOR) * (num_known_adapters + 1));
+		known_adapters = realloc(known_adapters, sizeof(NeighbourAdaptor) * (num_known_adapters + 1));
 		known_adapters[num_known_adapters].socket_fd = socket_fd;
 		known_adapters[num_known_adapters].client_addr = client_addr;
 		known_adapters[num_known_adapters].client_addr_len = client_addr_len;

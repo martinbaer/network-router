@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 
-typedef unsigned char BYTE;
+typedef unsigned char Byte;
 
-typedef enum MODE
+typedef enum Mode
 {
 	DISCOVER = 0x01,
 	OFFER = 0x02,
@@ -18,44 +18,47 @@ typedef enum MODE
 	DISTANCE = 0x09,
 	MORE_FRAGMENTS = 0x0A,
 	LAST_FRAGMENT = 0x0B,
-} MODE;
+} Mode;
 
-typedef struct IP_ADDRESS
+typedef struct IpAddress
 {
 	unsigned char octet[4];
-} IP_ADDRESS;
+} IpAddress;
 
-typedef struct PACKET
+typedef struct Packet
 {
-	IP_ADDRESS source_ip;	   // 4 bytes
-	IP_ADDRESS destination_ip; // 4 bytes
-	unsigned int offset;	   // 3 bytes
-	MODE mode;				   // 1 byte
-	BYTE *data;				   // rest of packet
-} PACKET;
+	IpAddress source_ip;	  // 4 bytes
+	IpAddress destination_ip; // 4 bytes
+	unsigned int offset;	  // 3 bytes
+	Mode mode;				  // 1 byte
+	Byte *data;				  // rest of packet
+} Packet;
 
-typedef struct XY_FIELD
+typedef struct Coordinate
 {
 	unsigned short x;
 	unsigned short y;
-} XY_FIELD;
+} Coordinate;
 
-XY_FIELD bytes_to_xy_field(BYTE *bytes);
-BYTE *xy_field_to_bytes(XY_FIELD xy_field);
+Coordinate bytes_to_xy_field(Byte *bytes);
+Byte *xy_field_to_bytes(Coordinate xy_field);
 
-BYTE *packet_to_bytes(PACKET packet);
-PACKET bytes_to_packet(BYTE *bytes);
+Byte *packet_to_bytes(Packet packet);
+Packet bytes_to_packet(Byte *bytes);
 
-BYTE *location_to_bytes(unsigned short latitude, unsigned short longitude);
+Byte *location_to_bytes(unsigned short latitude, unsigned short longitude);
 
-PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data);
-BYTE *ip_address_to_bytes(IP_ADDRESS ip_address);
-IP_ADDRESS bytes_to_ip_address(BYTE *bytes);
-IP_ADDRESS zero_ip_address();
+Packet new_packet(IpAddress source_ip, IpAddress destination_ip, unsigned int offset, Mode mode, Byte *data);
+Byte *ip_address_to_bytes(IpAddress ip_address);
+IpAddress bytes_to_ip_address(Byte *bytes);
+IpAddress zero_ip_address();
 
-bool ip_address_equals(IP_ADDRESS ip_address1, IP_ADDRESS ip_address2);
+bool ip_address_equals(IpAddress ip_address1, IpAddress ip_address2);
 
-void print_packet_as_bytes(PACKET packet);
-void print_packet(PACKET packet);
+void print_packet_as_bytes(Packet packet);
+void print_packet(Packet packet);
+void print_ip_address(IpAddress ip_address);
+
+IpAddress new_ip_address(int octet1, int octet2, int octet3, int octet4);
 
 #endif

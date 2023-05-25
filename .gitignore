@@ -8,6 +8,8 @@ git.sh
 *.b2out
 *.b2in
 *.aout
+*.tout
+*.in
 
 __pycache__
 */__pycache__

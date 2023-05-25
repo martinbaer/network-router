@@ -3,6 +3,6 @@
 
 #include "globals.h"
 
-void listen_and_forward(KNOWN_SWITCH neighbour_switch);
+void listen_and_forward(NeighbourSwitch neighbour_switch);
 
 #endif

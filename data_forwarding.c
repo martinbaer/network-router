@@ -13,14 +13,14 @@
 
 #define TCP_BUFFER_SIZE 1500
 
-void handle_received_distance(PACKET packet, KNOWN_SWITCH neighbour_switch);
-void handle_received_data(PACKET packet, BYTE packet_bytes[TCP_BUFFER_SIZE], KNOWN_SWITCH neighbour_switch);
-void handle_query(PACKET packet, KNOWN_SWITCH neighbour_switch);
-int get_prefix_length(IP_ADDRESS ip1, IP_ADDRESS ip2);
+void handle_received_distance(Packet packet, NeighbourSwitch neighbour_switch);
+void handle_received_data(Packet packet, Byte packet_bytes[TCP_BUFFER_SIZE], NeighbourSwitch neighbour_switch);
+void handle_query(Packet packet, NeighbourSwitch neighbour_switch);
+int get_prefix_length(IpAddress ip1, IpAddress ip2);
 
-void listen_and_forward(KNOWN_SWITCH neighbour_switch)
+void listen_and_forward(NeighbourSwitch neighbour_switch)
 {
-	BYTE buffer[TCP_BUFFER_SIZE];
+	Byte buffer[TCP_BUFFER_SIZE];
 	while (1)
 	{
 		fprintf(stderr, "Listening for packets\n");
@@ -30,7 +30,7 @@ void listen_and_forward(KNOWN_SWITCH neighbour_switch)
 		{
 			perror("recv failed");
 		}
-		PACKET packet = bytes_to_packet(buffer);
+		Packet packet = bytes_to_packet(buffer);
 		if (packet.mode == DISTANCE)
 		{
 			fprintf(stderr, "Received DISTANCE packet\n");
@@ -63,11 +63,11 @@ void listen_and_forward(KNOWN_SWITCH neighbour_switch)
 	}
 }
 
-void handle_query(PACKET packet, KNOWN_SWITCH neighbour_switch)
+void handle_query(Packet packet, NeighbourSwitch neighbour_switch)
 {
 	// reply with a READY packet
-	PACKET ready_packet = new_packet(this_switch.global_ip.ip_address, packet.source_ip, 0, READY, NULL);
-	BYTE *ready_packet_bytes = packet_to_bytes(ready_packet);
+	Packet ready_packet = new_packet(this_switch.global_ip.ip_address, packet.source_ip, 0, READY, NULL);
+	Byte *ready_packet_bytes = packet_to_bytes(ready_packet);
 	if (send(neighbour_switch.socket_fd, ready_packet_bytes, 12, 0) < 0)
 	{
 		perror("send failed");
@@ -79,7 +79,7 @@ void handle_query(PACKET packet, KNOWN_SWITCH neighbour_switch)
 // • If the switch is aware of the existence destination IP address, it should forward the packet to whichever connection is on the shortest geographical path to the destination.
 // • If two or more neighbouring switches are on paths of the same shortest length to the destination, the switch amongst these with the longest matching prefix of the destination IP address should receive the packet.
 // • If the switch is unaware of the existence of the destination IP address, it should forward the packet to whichever of its neighbouring connections has the IP address with the longest matching prefix with the destination IP address.
-void handle_received_data(PACKET packet, BYTE packet_bytes[TCP_BUFFER_SIZE], KNOWN_SWITCH neighbour_switch)
+void handle_received_data(Packet packet, Byte packet_bytes[TCP_BUFFER_SIZE], NeighbourSwitch neighbour_switch)
 {
 	// If the packet is intended for an adapter which the switch is connected to, it will forward the packet to that adapter.
 	for (int i = 0; i < num_known_adapters; i++)
@@ -98,24 +98,24 @@ void handle_received_data(PACKET packet, BYTE packet_bytes[TCP_BUFFER_SIZE], KNO
 				}
 				return;
 			}
-			// PACKET new_packet(IP_ADDRESS source_ip, IP_ADDRESS destination_ip, unsigned int offset, MODE mode, BYTE *data)
+			// Packet new_packet(IpAddress source_ip, IpAddress destination_ip, unsigned int offset, Mode mode, Byte *data)
 			// send query packet
-			PACKET query_packet = new_packet(this_switch.local_ip.ip_address, packet.destination_ip, 0, QUERY, NULL);
-			BYTE *query_packet_bytes = packet_to_bytes(query_packet);
+			Packet query_packet = new_packet(this_switch.local_ip.ip_address, packet.destination_ip, 0, QUERY, NULL);
+			Byte *query_packet_bytes = packet_to_bytes(query_packet);
 			if (sendto(known_adapters[i].socket_fd, query_packet_bytes, 12, 0, (struct sockaddr *)&known_adapters[i].client_addr, known_adapters[i].client_addr_len) < 0)
 			{
 				perror("sendto failed");
 			}
 			// receive response packet
-			BYTE response_packet_bytes[TCP_BUFFER_SIZE];
+			Byte response_packet_bytes[TCP_BUFFER_SIZE];
 			if (recv(known_adapters[i].socket_fd, response_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 			{
 				perror("recv failed");
 			}
-			PACKET response_packet = bytes_to_packet(response_packet_bytes);
+			Packet response_packet = bytes_to_packet(response_packet_bytes);
 			if (response_packet.mode != READY)
 			{
-				printf("ERROR: Received packet was not a READY packet\n");
+				fprintf(stderr, "ERROR: Received packet was not a READY packet\n");
 				return;
 			}
 			known_adapters[i].time_of_last_ready = time(NULL);
@@ -127,63 +127,83 @@ void handle_received_data(PACKET packet, BYTE packet_bytes[TCP_BUFFER_SIZE], KNO
 			return;
 		}
 	}
-	// If the switch is aware of the existence destination IP address, it should forward the packet to whichever connection is on the shortest geographical path to the destination.
-	for (int i = 0; i < num_known_switches; i++)
-	{
-		if (ip_address_equals(known_switches[i].ip_address, packet.destination_ip))
-		{
-			// check if next hop is equal to the switch - SEND TO END POINT
-			if (ip_address_equals(known_switches[i].next_hop, packet.destination_ip))
-			{
-				// check if already ready and send
-				time_t current_time = time(NULL);
-				if (difftime(current_time, known_switches[i].time_of_last_ready) < 5)
-				{
-					// ready
-					if (send(known_switches[i].socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
-					{
-						perror("send failed");
-					}
-					return;
-				}
-				// send query packet
-				fprintf(stderr, "Sending query packet to switch\n");
-				fflush(stderr);
-				PACKET query_packet = new_packet(this_switch.local_ip.ip_address, packet.destination_ip, 0, QUERY, NULL);
-				BYTE *query_packet_bytes = packet_to_bytes(query_packet);
-				if (send(known_switches[i].socket_fd, query_packet_bytes, 12, 0) < 0)
-				{
-					perror("send failed");
-				}
-				// receive response packet
-				BYTE response_packet_bytes[TCP_BUFFER_SIZE];
-				if (recv(known_switches[i].socket_fd, response_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
-				{
-					perror("recv failed");
-				}
-				PACKET response_packet = bytes_to_packet(response_packet_bytes);
-				print_packet(response_packet);
-				if (response_packet.mode != READY)
-				{
-					printf("ERROR: Received packet was not a READY packet\n");
-					return;
-				}
-				known_switches[i].time_of_last_ready = time(NULL);
-				// send data
-				if (send(known_switches[i].socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
-				{
-					perror("send failed");
-				}
-				return;
-			}
-			// forward to next hop
-			if (send(known_switches[i].next_hop_socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
-			{
-				perror("send failed");
-			}
-			return;
-		}
-	}
+	fprintf(stderr, "Completed checking if packet is intended for an adapter\n");
+	fflush(stderr);
+	// // If the switch is aware of the existence destination IP address, it should forward the packet to whichever connection is on the shortest geographical path to the destination.
+	// for (int i = 0; i < num_known_switches; i++)
+	// {
+	// 	fprintf(stderr, "hello\n");
+	// 	fflush(stderr);
+	// 	// print known switche
+	// 	for (int j = 0; j < 4; j++)
+	// 	{
+	// 		fprintf(stderr, "%d ", known_switches[i].ip_address.octet[j]);
+	// 		fflush(stderr);
+	// 	}
+	// 	fprintf(stderr, "\n");
+	// 	for (int j = 0; j < 4; j++)
+	// 	{
+	// 		fprintf(stderr, "%d ", packet.destination_ip.octet[j]);
+	// 		fflush(stderr);
+	// 	}
+	// 	if (ip_address_equals(known_switches[i].ip_address, packet.destination_ip))
+	// 	{
+	// 		fprintf(stderr, "aware of destination ip\n");
+	// 		fflush(stderr);
+	// 		// check if next hop is equal to the switch - SEND TO END POINT
+	// 		if (ip_address_equals(known_switches[i].next_hop, packet.destination_ip))
+	// 		{
+	// 			fprintf(stderr, "next hop is equal to destination ip\n");
+	// 			fflush(stderr);
+	// 			// check if already ready and send
+	// 			time_t current_time = time(NULL);
+	// 			if (difftime(current_time, known_switches[i].time_of_last_ready) < 5)
+	// 			{
+	// 				// ready
+	// 				if (send(known_switches[i].socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	// 				{
+	// 					perror("send failed");
+	// 				}
+	// 				return;
+	// 			}
+	// 			// send query packet
+	// 			fprintf(stderr, "Sending query packet to switch\n");
+	// 			fflush(stderr);
+	// 			Packet query_packet = new_packet(this_switch.global_ip.ip_address, packet.destination_ip, 0, QUERY, NULL);
+	// 			Byte *query_packet_bytes = packet_to_bytes(query_packet);
+	// 			if (send(known_switches[i].socket_fd, query_packet_bytes, 12, 0) < 0)
+	// 			{
+	// 				perror("send failed");
+	// 			}
+	// 			// receive response packet
+	// 			Byte response_packet_bytes[TCP_BUFFER_SIZE];
+	// 			if (recv(known_switches[i].socket_fd, response_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	// 			{
+	// 				perror("recv failed");
+	// 			}
+	// 			Packet response_packet = bytes_to_packet(response_packet_bytes);
+	// 			print_packet(response_packet);
+	// 			if (response_packet.mode != READY)
+	// 			{
+	// 				fprintf(stderr, "ERROR: Received packet was not a READY packet\n");
+	// 				return;
+	// 			}
+	// 			known_switches[i].time_of_last_ready = time(NULL);
+	// 			// send data
+	// 			if (send(known_switches[i].socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	// 			{
+	// 				perror("send failed");
+	// 			}
+	// 			return;
+	// 		}
+	// 		// forward to next hop
+	// 		if (send(known_switches[i].next_hop_socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	// 		{
+	// 			perror("send failed");
+	// 		}
+	// 		return;
+	// 	}
+	// }
 	// If the switch is unaware of the existence of the destination IP address, it should forward the packet to whichever of its neighbouring connections has the IP address with the longest matching prefix with the destination IP address.
 	int best_neighbour_socket_fd = -1;
 	int best_prefix_length = -1;
@@ -196,6 +216,15 @@ void handle_received_data(PACKET packet, BYTE packet_bytes[TCP_BUFFER_SIZE], KNO
 		int prefix_length = get_prefix_length(known_switches[i].ip_address, packet.destination_ip);
 		if (prefix_length > best_prefix_length)
 		{
+			// print their ip addresses
+			fprintf(stderr, "best prefix\n");
+			for (int j = 0; j < 4; j++)
+			{
+				fprintf(stderr, "%d ", known_switches[i].ip_address.octet[j]);
+				fflush(stderr);
+			}
+			fprintf(stderr, "\n");
+			fflush(stderr);
 			best_prefix_length = prefix_length;
 			best_neighbour_socket_fd = known_switches[i].socket_fd;
 		}
@@ -207,17 +236,40 @@ void handle_received_data(PACKET packet, BYTE packet_bytes[TCP_BUFFER_SIZE], KNO
 		return;
 	}
 	// forward to best neighbour
+	// send query packet
+	fprintf(stderr, "Sending query packet to switch\n");
+	fflush(stderr);
+	Packet query_packet = new_packet(this_switch.global_ip.ip_address, packet.destination_ip, 0, QUERY, NULL);
+	Byte *query_packet_bytes = packet_to_bytes(query_packet);
+	if (send(best_neighbour_socket_fd, query_packet_bytes, 12, 0) < 0)
+	{
+		perror("send failed");
+	}
+	// receive response packet
+	Byte response_packet_bytes[TCP_BUFFER_SIZE];
+	if (recv(best_neighbour_socket_fd, response_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	{
+		perror("recv failed");
+	}
+	Packet response_packet = bytes_to_packet(response_packet_bytes);
+	// print_packet(response_packet);
+	if (response_packet.mode != READY)
+	{
+		printf("ERROR: Received packet was not a READY packet\n");
+		return;
+	}
+	// send data
 	if (send(best_neighbour_socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
 	}
 }
 
-// typedef struct IP_ADDRESS
+// typedef struct IpAddress
 // {
 // 	unsigned char octet[4];
-// } IP_ADDRESS;
-int get_prefix_length(IP_ADDRESS ip1, IP_ADDRESS ip2)
+// } IpAddress;
+int get_prefix_length(IpAddress ip1, IpAddress ip2)
 {
 	int prefix_length = 0;
 	for (int i = 0; i < 4; i++)
@@ -243,14 +295,16 @@ int get_prefix_length(IP_ADDRESS ip1, IP_ADDRESS ip2)
 	return prefix_length;
 }
 
-void handle_received_distance(PACKET packet, KNOWN_SWITCH neighbour_switch)
+void handle_received_distance(Packet packet, NeighbourSwitch neighbour_switch)
 {
+	print_packet(packet);
+	print_packet_as_bytes(packet);
 	// extract ip (first 4 bytes of data) and distance (last 4 bytes of data)
-	BYTE *ip_bytes = malloc(4);
-	BYTE *distance_bytes = malloc(4);
+	Byte *ip_bytes = malloc(4);
+	Byte *distance_bytes = malloc(4);
 	memcpy(ip_bytes, packet.data, 4);
 	memcpy(distance_bytes, packet.data + 4, 4);
-	IP_ADDRESS ip_address_of_distance = bytes_to_ip_address(ip_bytes);
+	IpAddress ip_address_of_distance = bytes_to_ip_address(ip_bytes);
 	// convert distance byte (big endian) to int
 	int distance = 0;
 	for (int i = 0; i < 4; i++)
@@ -286,14 +340,36 @@ void handle_received_distance(PACKET packet, KNOWN_SWITCH neighbour_switch)
 				known_switches[i].next_hop.octet[j] = neighbour_switch.ip_address.octet[j];
 			}
 			known_switches[i].socket_fd = neighbour_switch.socket_fd;
-			relay_distance(known_switches[i]);
+			// print neighbour ip address
+			// fprintf(stderr, "neighbour ip address\n");
+			// for (int j = 0; j < 4; j++)
+			// {
+			// 	fprintf(stderr, "%d ", neighbour_switch.ip_address.octet[j]);
+			// 	fflush(stderr);
+			// }
+			relay_distance(known_switches[i], neighbour_switch);
 			ip_is_known = true;
 			break;
 		}
 	}
 	if (!ip_is_known)
 	{
-		KNOWN_SWITCH new_switch = add_new_known_switch(neighbour_switch.socket_fd, ip_address_of_distance, distance, neighbour_switch.ip_address, neighbour_switch.socket_fd);
-		relay_distance(new_switch);
+		NeighbourSwitch new_switch = add_new_known_switch(neighbour_switch.socket_fd, ip_address_of_distance, distance, neighbour_switch.ip_address, neighbour_switch.socket_fd, neighbour_switch.ip_address);
+		// print neighbour ip address
+		// fprintf(stderr, "2 neighbour ip address\n");
+		// // print ip address of new switch
+		// fprintf(stderr, "ip address of new switch\n");
+		// for (int j = 0; j < 4; j++)
+		// {
+		// 	fprintf(stderr, "%d ", new_switch.ip_address.octet[j]);
+		// 	fflush(stderr);
+		// }
+		// print_packet_as_bytes(packet);
+		// for (int j = 0; j < 4; j++)
+		// {
+		// 	fprintf(stderr, "%d ", neighbour_switch.ip_address.octet[j]);
+		// 	fflush(stderr);
+		// }
+		relay_distance(new_switch, neighbour_switch);
 	}
 }

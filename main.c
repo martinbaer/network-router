@@ -15,16 +15,15 @@
 
 SWITCH this_switch = {0};
 int num_known_switches = 0;
-KNOWN_SWITCH *known_switches = NULL;
+NeighbourSwitch *known_switches = NULL;
 int num_known_adapters = 0;
-KNOWN_ADAPTOR *known_adapters = NULL;
+NeighbourAdaptor *known_adapters = NULL;
 
 int main(int argc, char *argv[])
 {
 	this_switch = parse_command_line(argc, argv);
-	known_switches = malloc(sizeof(KNOWN_SWITCH) * num_known_switches);
-	known_adapters = malloc(sizeof(KNOWN_ADAPTOR) * num_known_adapters);
-
+	known_switches = malloc(sizeof(NeighbourSwitch) * num_known_switches);
+	known_adapters = malloc(sizeof(NeighbourAdaptor) * num_known_adapters);
 	PORT tcp_port, udp_port;
 	if (this_switch.type == LOCAL || this_switch.type == MIXED)
 	{

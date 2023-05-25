@@ -30,13 +30,13 @@
 
 // typedef struct IP_ADDRESS_WITH_CIDR
 // {
-// 	IP_ADDRESS ip_address;
+// 	IpAddress ip_address;
 // 	unsigned char cidr;
 // } IP_ADDRESS_WITH_CIDR;
-// typedef struct IP_ADDRESS
+// typedef struct IpAddress
 // {
 // 	unsigned char octet[4];
-// } IP_ADDRESS;
+// } IpAddress;
 // parse from form e.g. 168.0.0.1/24
 IP_ADDRESS_WITH_CIDR parse_ip_address(char *ip_address_str)
 {
@@ -47,6 +47,9 @@ IP_ADDRESS_WITH_CIDR parse_ip_address(char *ip_address_str)
 	// sscanf returns the number of successfully read items
 	if (sscanf(ip_address_str, "%d.%d.%d.%d/%d", &octets[0], &octets[1], &octets[2], &octets[3], &cidr) != 5)
 	{
+		// print address to stderr
+		fprintf(stderr, "Invalid IP address: %s\n", ip_address_str);
+		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
 
@@ -92,9 +95,11 @@ SWITCH parse_command_line(int argc, char *argv[])
 	}
 	else
 	{
+
 		printf("Invalid number of arguments\n");
 		exit(1);
 	}
+
 	// get local ip address
 	if (sw.type == LOCAL || sw.type == MIXED)
 	{
@@ -105,13 +110,14 @@ SWITCH parse_command_line(int argc, char *argv[])
 	if (sw.type == MIXED)
 	{
 		// at index 4
-		sw.global_ip = parse_ip_address(argv[4]);
+		sw.global_ip = parse_ip_address(argv[3]);
 	}
 	else if (sw.type == GLOBAL)
 	{
 		// at index 2
 		sw.global_ip = parse_ip_address(argv[2]);
 	}
+
 	// get latitude
 	sw.location.x = atoi(argv[argc - 2]);
 	// get longitude

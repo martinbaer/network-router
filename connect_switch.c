@@ -17,9 +17,9 @@
 
 #define LOCALHOST "127.0.0.1"
 
-IP_ADDRESS n_higher_ip_address(IP_ADDRESS ip_address, int n);
-IP_ADDRESS allocate_global_ip_address();
-IP_ADDRESS allocate_local_ip_address();
+IpAddress n_higher_ip_address(IpAddress ip_address, int n);
+IpAddress allocate_global_ip_address();
+IpAddress allocate_local_ip_address();
 
 // 	If the switch is able to connect to the port given in the connect command, it (referred to as the client switch)
 // will engage in the Greeting Protocol with the switch it connected to (referred to as the host switch). In the
@@ -69,16 +69,16 @@ void *greet_client_switch(void *arg)
 	int socket_fd = *(int *)arg;
 
 	// 4 bytes of 0
-	BYTE *empty_assigned_ip = malloc(4);
+	Byte *empty_assigned_ip = malloc(4);
 	memset(empty_assigned_ip, 0, 4);
 
 	// receive discovery packet
-	BYTE buffer[TCP_BUFFER_SIZE];
+	Byte buffer[TCP_BUFFER_SIZE];
 	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("recv failed");
 	}
-	PACKET discovery_packet = bytes_to_packet(buffer);
+	Packet discovery_packet = bytes_to_packet(buffer);
 	if (discovery_packet.mode != DISCOVER)
 	{
 		// end connection
@@ -87,10 +87,10 @@ void *greet_client_switch(void *arg)
 	}
 
 	// send offer packet
-	IP_ADDRESS assigned_ip = allocate_global_ip_address();
-	BYTE *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
-	PACKET offer_packet = new_packet(this_switch.global_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
-	BYTE *offer_packet_bytes = packet_to_bytes(offer_packet);
+	IpAddress assigned_ip = allocate_global_ip_address();
+	Byte *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
+	Packet offer_packet = new_packet(this_switch.global_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
+	Byte *offer_packet_bytes = packet_to_bytes(offer_packet);
 	if (send(socket_fd, offer_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
@@ -101,7 +101,7 @@ void *greet_client_switch(void *arg)
 	{
 		perror("recv failed");
 	}
-	PACKET request_packet = bytes_to_packet(buffer);
+	Packet request_packet = bytes_to_packet(buffer);
 	if (request_packet.mode != REQUEST)
 	{
 		// end connection
@@ -110,8 +110,8 @@ void *greet_client_switch(void *arg)
 	}
 
 	// send acknowledgment packet
-	PACKET acknowledgment_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
-	BYTE *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
+	Packet acknowledgment_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
+	Byte *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
 	if (send(socket_fd, acknowledgment_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
@@ -122,30 +122,32 @@ void *greet_client_switch(void *arg)
 	{
 		perror("recv failed");
 	}
-	PACKET client_location_packet = bytes_to_packet(buffer);
+	Packet client_location_packet = bytes_to_packet(buffer);
 	if (client_location_packet.mode != LOCATION)
 	{
 		// end connection
 		close(socket_fd);
 		return NULL;
 	}
-	XY_FIELD client_location = bytes_to_xy_field(client_location_packet.data);
+	Coordinate client_location = bytes_to_xy_field(client_location_packet.data);
 
 	// add to list of known switches
 	int new_switch_distance = calculate_distance(client_location, this_switch.location);
-	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, assigned_ip, new_switch_distance, assigned_ip, socket_fd);
+	NeighbourSwitch new_known_switch = add_new_known_switch(socket_fd, assigned_ip, new_switch_distance, assigned_ip, socket_fd, assigned_ip);
 
 	// send location packet
-	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
-	PACKET this_switch_location_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, LOCATION, this_switch_location_bytes);
-	BYTE *this_switch_location_packet_bytes = packet_to_bytes(this_switch_location_packet);
+	Byte *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
+	Packet this_switch_location_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, LOCATION, this_switch_location_bytes);
+	Byte *this_switch_location_packet_bytes = packet_to_bytes(this_switch_location_packet);
 	if (send(socket_fd, this_switch_location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
 	}
 
+	inform_switch_of_known_distances(new_known_switch);
+
 	// relay distance
-	relay_distance(new_known_switch);
+	relay_distance(new_known_switch, new_known_switch);
 
 	// listen and forward
 	listen_and_forward(new_known_switch);
@@ -162,24 +164,24 @@ void *greet_host_switch(void *arg)
 	int socket_fd = create_outgoing_connection(port_number);
 
 	// 4 bytes of 0
-	BYTE *empty_assigned_ip = malloc(4);
+	Byte *empty_assigned_ip = malloc(4);
 	memset(empty_assigned_ip, 0, 4);
 
 	// send discovery packet
-	PACKET discovery_packet = new_packet(zero_ip_address(), zero_ip_address(), 0, DISCOVER, empty_assigned_ip);
-	BYTE *discovery_packet_bytes = packet_to_bytes(discovery_packet);
+	Packet discovery_packet = new_packet(zero_ip_address(), zero_ip_address(), 0, DISCOVER, empty_assigned_ip);
+	Byte *discovery_packet_bytes = packet_to_bytes(discovery_packet);
 	if (send(socket_fd, discovery_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
 	}
 
 	// receive offer packet
-	BYTE buffer[TCP_BUFFER_SIZE];
+	Byte buffer[TCP_BUFFER_SIZE];
 	if (recv(socket_fd, buffer, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("recv failed");
 	}
-	PACKET offer_packet = bytes_to_packet(buffer);
+	Packet offer_packet = bytes_to_packet(buffer);
 	if (offer_packet.mode != OFFER)
 	{
 		// end connection
@@ -188,8 +190,8 @@ void *greet_host_switch(void *arg)
 	}
 
 	// send request packet
-	PACKET request_packet = new_packet(zero_ip_address(), offer_packet.source_ip, 0, REQUEST, offer_packet.data);
-	BYTE *request_packet_bytes = packet_to_bytes(request_packet);
+	Packet request_packet = new_packet(zero_ip_address(), offer_packet.source_ip, 0, REQUEST, offer_packet.data);
+	Byte *request_packet_bytes = packet_to_bytes(request_packet);
 	if (send(socket_fd, request_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
@@ -200,7 +202,7 @@ void *greet_host_switch(void *arg)
 	{
 		perror("recv failed");
 	}
-	PACKET acknowledgment_packet = bytes_to_packet(buffer);
+	Packet acknowledgment_packet = bytes_to_packet(buffer);
 	if (acknowledgment_packet.mode != ACKNOWLEDGE)
 	{
 		// end connection
@@ -209,10 +211,10 @@ void *greet_host_switch(void *arg)
 	}
 
 	// send location packet
-	IP_ADDRESS my_assigned_ip = bytes_to_ip_address(acknowledgment_packet.data);
-	BYTE *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
-	PACKET location_packet = new_packet(my_assigned_ip, acknowledgment_packet.source_ip, 0, LOCATION, this_switch_location_bytes);
-	BYTE *location_packet_bytes = packet_to_bytes(location_packet);
+	IpAddress my_assigned_ip = bytes_to_ip_address(acknowledgment_packet.data);
+	Byte *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
+	Packet location_packet = new_packet(my_assigned_ip, acknowledgment_packet.source_ip, 0, LOCATION, this_switch_location_bytes);
+	Byte *location_packet_bytes = packet_to_bytes(location_packet);
 	if (send(socket_fd, location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 	{
 		perror("send failed");
@@ -223,21 +225,23 @@ void *greet_host_switch(void *arg)
 	{
 		perror("recv failed");
 	}
-	PACKET host_location_packet = bytes_to_packet(buffer);
+	Packet host_location_packet = bytes_to_packet(buffer);
 	if (host_location_packet.mode != LOCATION)
 	{
 		// end connection
 		close(socket_fd);
 		return NULL;
 	}
-	XY_FIELD host_location = bytes_to_xy_field(host_location_packet.data);
+	Coordinate host_location = bytes_to_xy_field(host_location_packet.data);
 
 	// add to list of known switches
 	int new_switch_distance = calculate_distance(host_location, this_switch.location);
-	KNOWN_SWITCH new_known_switch = add_new_known_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance, acknowledgment_packet.source_ip, socket_fd);
+	NeighbourSwitch new_known_switch = add_new_known_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance, acknowledgment_packet.source_ip, socket_fd, acknowledgment_packet.source_ip);
+
+	inform_switch_of_known_distances(new_known_switch);
 
 	// relay distance
-	relay_distance(new_known_switch);
+	relay_distance(new_known_switch, new_known_switch);
 
 	// listen and forward
 	listen_and_forward(new_known_switch);
@@ -284,13 +288,13 @@ void *listen_for_switch_connections(void *arg)
 
 // typedef struct IP_ADDRESS_WITH_CIDR
 // {
-// 	IP_ADDRESS ip_address;
+// 	IpAddress ip_address;
 // 	unsigned char cidr;
 // } IP_ADDRESS_WITH_CIDR;
-// typedef struct IP_ADDRESS
+// typedef struct IpAddress
 // {
 // 	unsigned char octet[4];
-// } IP_ADDRESS;
+// } IpAddress;
 // typedef struct SWITCH
 // {
 // 	SWITCH_TYPE type;
