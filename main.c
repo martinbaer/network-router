@@ -14,16 +14,19 @@
 #include "globals.h"
 
 SWITCH this_switch = {0};
-int num_known_switches = 0;
-NeighbourSwitch *known_switches = NULL;
-int num_known_adapters = 0;
-NeighbourAdaptor *known_adapters = NULL;
+int num_neighbour_switches = 0;
+NeighbourSwitch *neighbour_switches = NULL;
+int num_neighbour_adapters = 0;
+NeighbourAdaptor *neighbour_adapters = NULL;
+int num_known_ip_addresses = 0;
+KnownIpAddress *known_ip_addresses = NULL;
 
 int main(int argc, char *argv[])
 {
 	this_switch = parse_command_line(argc, argv);
-	known_switches = malloc(sizeof(NeighbourSwitch) * num_known_switches);
-	known_adapters = malloc(sizeof(NeighbourAdaptor) * num_known_adapters);
+	neighbour_switches = malloc(sizeof(NeighbourSwitch) * num_neighbour_switches);
+	neighbour_adapters = malloc(sizeof(NeighbourAdaptor) * num_neighbour_adapters);
+	known_ip_addresses = malloc(sizeof(KnownIpAddress) * num_known_ip_addresses);
 	PORT tcp_port, udp_port;
 	if (this_switch.type == LOCAL || this_switch.type == MIXED)
 	{

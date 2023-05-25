@@ -32,6 +32,7 @@ typedef struct Packet
 	unsigned int offset;	  // 3 bytes
 	Mode mode;				  // 1 byte
 	Byte *data;				  // rest of packet
+	int length;
 } Packet;
 
 typedef struct Coordinate

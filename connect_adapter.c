@@ -36,7 +36,7 @@ void *listen_for_adapter_connections(void *arg)
 			continue;
 		}
 		// print discover packet
-		print_packet(discover_packet);
+		// print_packet(discover_packet);
 		// send OFFER packet
 		IpAddress assigned_ip = allocate_local_ip_address();
 		Byte *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
@@ -68,17 +68,20 @@ void *listen_for_adapter_connections(void *arg)
 		}
 
 		// add to known adaptors
-		known_adapters = realloc(known_adapters, sizeof(NeighbourAdaptor) * (num_known_adapters + 1));
-		known_adapters[num_known_adapters].socket_fd = socket_fd;
-		known_adapters[num_known_adapters].client_addr = client_addr;
-		known_adapters[num_known_adapters].client_addr_len = client_addr_len;
-		// copy assigned_ip_bytes into known_adapters[num_known_adapters].assigned_ip
-		known_adapters[num_known_adapters].ip_address.octet[0] = assigned_ip_bytes[0];
-		known_adapters[num_known_adapters].ip_address.octet[1] = assigned_ip_bytes[1];
-		known_adapters[num_known_adapters].ip_address.octet[2] = assigned_ip_bytes[2];
-		known_adapters[num_known_adapters].ip_address.octet[3] = assigned_ip_bytes[3];
-		known_adapters[num_known_adapters].time_of_last_ready = time(NULL) - 10;
-		num_known_adapters++;
+		neighbour_adapters = realloc(neighbour_adapters, sizeof(NeighbourAdaptor) * (num_neighbour_adapters + 1));
+		neighbour_adapters[num_neighbour_adapters].socket_fd = socket_fd;
+		neighbour_adapters[num_neighbour_adapters].client_addr = client_addr;
+		neighbour_adapters[num_neighbour_adapters].client_addr_len = client_addr_len;
+		// copy assigned_ip_bytes into neighbour_adapters[num_neighbour_adapters].assigned_ip
+		neighbour_adapters[num_neighbour_adapters].ip_address.octet[0] = assigned_ip_bytes[0];
+		neighbour_adapters[num_neighbour_adapters].ip_address.octet[1] = assigned_ip_bytes[1];
+		neighbour_adapters[num_neighbour_adapters].ip_address.octet[2] = assigned_ip_bytes[2];
+		neighbour_adapters[num_neighbour_adapters].ip_address.octet[3] = assigned_ip_bytes[3];
+		neighbour_adapters[num_neighbour_adapters].time_of_last_ready = time(NULL) - 10;
+		num_neighbour_adapters++;
+
+		NeighbourSwitch me_as_neighbour = {0, this_switch.local_ip.ip_address, time(NULL) - 10};
+		add_new_known_ip_address(assigned_ip, me_as_neighbour, 0);
 	}
 
 	return NULL;

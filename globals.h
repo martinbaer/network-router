@@ -11,20 +11,11 @@
 #include "packet.h"
 #include "invocation.h"
 
-typedef struct KnownIpAddress
-{
-	IpAddress ip_address;
-} KnownIpAddress;
-
 typedef struct NeighbourSwitch
 {
 	int socket_fd;
 	IpAddress ip_address;
-	int distance;
-	IpAddress next_hop;
-	int next_hop_socket_fd;
 	time_t time_of_last_ready;
-	IpAddress distance_informant_ip_address;
 } NeighbourSwitch;
 
 typedef struct NeighbourAdaptor
@@ -36,11 +27,25 @@ typedef struct NeighbourAdaptor
 	time_t time_of_last_ready;
 } NeighbourAdaptor;
 
-extern int num_known_switches;
-extern NeighbourSwitch *known_switches;
+typedef struct KnownIpAddress
+{
+	IpAddress ip_address;
+	NeighbourSwitch next_hop;
+	int distance;
+} KnownIpAddress;
 
-extern int num_known_adapters;
-extern NeighbourAdaptor *known_adapters;
+extern int num_neighbour_switches;
+extern NeighbourSwitch *neighbour_switches;
+
+extern int num_neighbour_adapters;
+extern NeighbourAdaptor *neighbour_adapters;
+
+extern int num_known_ip_addresses;
+extern KnownIpAddress *known_ip_addresses;
+
+KnownIpAddress *find_known_ip_address(IpAddress ip_address);
+
+void add_new_known_ip_address(IpAddress ip_address, NeighbourSwitch next_hop, int distance);
 
 extern SWITCH this_switch;
 

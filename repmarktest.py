@@ -733,10 +733,8 @@ class Connection:
 		self._send(pkt, add, tcp_sock, target_info=tcp_info, print_out=True, extend_message=switch_name)
 		self._recv(tcp_sock, print_out=True, extend_message=switch_name, size=16)  # location
 		# checking method has removed in student mode test suite
-		print("here1")
 		self._recv(tcp_sock, print_out=True, extend_message=switch_name, size=20)  # distance
 		self.tear_down()
-		print("here2")
 
 	def switch_forward_message(self):
 		self._error.write("---- TEST 11: SWITCH_FORWARD_ADAPTER\n")

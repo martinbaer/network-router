@@ -91,7 +91,7 @@ void *greet_client_switch(void *arg)
 	Byte *assigned_ip_bytes = ip_address_to_bytes(assigned_ip);
 	Packet offer_packet = new_packet(this_switch.global_ip.ip_address, zero_ip_address(), 0, OFFER, assigned_ip_bytes);
 	Byte *offer_packet_bytes = packet_to_bytes(offer_packet);
-	if (send(socket_fd, offer_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	if (send(socket_fd, offer_packet_bytes, offer_packet.length, 0) < 0)
 	{
 		perror("send failed");
 	}
@@ -112,7 +112,7 @@ void *greet_client_switch(void *arg)
 	// send acknowledgment packet
 	Packet acknowledgment_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, ACKNOWLEDGE, assigned_ip_bytes);
 	Byte *acknowledgment_packet_bytes = packet_to_bytes(acknowledgment_packet);
-	if (send(socket_fd, acknowledgment_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	if (send(socket_fd, acknowledgment_packet_bytes, acknowledgment_packet.length, 0) < 0)
 	{
 		perror("send failed");
 	}
@@ -133,24 +133,42 @@ void *greet_client_switch(void *arg)
 
 	// add to list of known switches
 	int new_switch_distance = calculate_distance(client_location, this_switch.location);
-	NeighbourSwitch new_known_switch = add_new_known_switch(socket_fd, assigned_ip, new_switch_distance, assigned_ip, socket_fd, assigned_ip);
+	NeighbourSwitch new_neighbour_switch = add_new_neighbour_switch(socket_fd, assigned_ip, new_switch_distance);
 
 	// send location packet
 	Byte *this_switch_location_bytes = xy_field_to_bytes(this_switch.location);
 	Packet this_switch_location_packet = new_packet(this_switch.global_ip.ip_address, assigned_ip, 0, LOCATION, this_switch_location_bytes);
 	Byte *this_switch_location_packet_bytes = packet_to_bytes(this_switch_location_packet);
-	if (send(socket_fd, this_switch_location_packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
+	if (send(socket_fd, this_switch_location_packet_bytes, this_switch_location_packet.length, 0) < 0)
 	{
 		perror("send failed");
 	}
 
-	inform_switch_of_known_distances(new_known_switch);
-
 	// relay distance
-	relay_distance(new_known_switch, new_known_switch);
+	KnownIpAddress *neighbour_known_ip_address = find_known_ip_address(new_neighbour_switch.ip_address);
+	relay_distance(*neighbour_known_ip_address, new_neighbour_switch);
+
+	// inform_neighbour_switch_of_known_distances(new_neighbour_switch);
+
+	// if mixed switch, send distance to it's local ip
+	if (this_switch.type == MIXED)
+	{
+		// Packet create_distance_packet(IpAddress sender, IpAddress receiver, IpAddress subject, int distance);
+
+		// send distance to local ip
+		Packet distance_packet = create_distance_packet(this_switch.global_ip.ip_address, assigned_ip, this_switch.local_ip.ip_address, new_switch_distance);
+		// send
+		Byte *distance_packet_bytes = packet_to_bytes(distance_packet);
+		// print packet
+		print_packet_as_bytes(distance_packet);
+		if (send(socket_fd, distance_packet_bytes, distance_packet.length, 0) < 0)
+		{
+			perror("send failed");
+		}
+	}
 
 	// listen and forward
-	listen_and_forward(new_known_switch);
+	listen_and_forward(new_neighbour_switch);
 
 	return NULL;
 }
@@ -236,15 +254,15 @@ void *greet_host_switch(void *arg)
 
 	// add to list of known switches
 	int new_switch_distance = calculate_distance(host_location, this_switch.location);
-	NeighbourSwitch new_known_switch = add_new_known_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance, acknowledgment_packet.source_ip, socket_fd, acknowledgment_packet.source_ip);
-
-	inform_switch_of_known_distances(new_known_switch);
+	NeighbourSwitch new_neighbour_switch = add_new_neighbour_switch(socket_fd, acknowledgment_packet.source_ip, new_switch_distance);
 
 	// relay distance
-	relay_distance(new_known_switch, new_known_switch);
+	KnownIpAddress *neighbour_known_ip_address = find_known_ip_address(new_neighbour_switch.ip_address);
+	relay_distance(*neighbour_known_ip_address, new_neighbour_switch);
 
+	// inform_neighbour_switch_of_known_distances(new_neighbour_switch);
 	// listen and forward
-	listen_and_forward(new_known_switch);
+	listen_and_forward(new_neighbour_switch);
 
 	return NULL;
 }

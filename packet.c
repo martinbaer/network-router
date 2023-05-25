@@ -107,6 +107,12 @@ Packet new_packet(IpAddress source_ip, IpAddress destination_ip, unsigned int of
 	result.offset = offset;
 	result.mode = mode;
 	result.data = data;
+	// get length
+	result.length = 12;
+	if (mode == DISCOVER || mode == OFFER || mode == REQUEST || mode == ACKNOWLEDGE || mode == LOCATION)
+		result.length += 4;
+	if (mode == DISTANCE)
+		result.length += 8;
 	return result;
 }
 

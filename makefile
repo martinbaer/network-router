@@ -3,10 +3,10 @@ CC = gcc
 
 CFLAGS = -Wall -pedantic -std=gnu99
 
-RUSHBSwitch: main.o invocation.o open_port.o packet.o connect_switch.o connect_adapter.o ip_allocation.o distance_relaying.o data_forwarding.o
+RUSHBSwitch: main.o invocation.o open_port.o packet.o connect_switch.o connect_adapter.o ip_allocation.o distance_relaying.o data_forwarding.o globals.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-main.o: main.c globals.h
+main.o: main.c
 	$(CC) $(CFLAGS) -c $<
 
 invocation.o: invocation.c invocation.h
@@ -31,6 +31,9 @@ distance_relaying.o: distance_relaying.c distance_relaying.h
 	$(CC) $(CFLAGS) -c $<
 
 data_forwarding.o: data_forwarding.c data_forwarding.h
+	$(CC) $(CFLAGS) -c $<
+
+globals.o: globals.c globals.h
 	$(CC) $(CFLAGS) -c $<
 
 clean:
