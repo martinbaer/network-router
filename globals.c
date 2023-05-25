@@ -24,6 +24,18 @@ KnownIpAddress *find_known_ip_address(IpAddress ip_address)
 	return NULL;
 }
 
+NeighbourSwitch *find_neighbour_switch(IpAddress ip_address)
+{
+	for (int i = 0; i < num_neighbour_switches; i++)
+	{
+		if (ip_address_equals(neighbour_switches[i].ip_address, ip_address))
+		{
+			return &neighbour_switches[i];
+		}
+	}
+	return NULL;
+}
+
 NeighbourSwitch add_new_neighbour_switch(int socket_fd, IpAddress ip_address, int distance)
 {
 	// create new neighbour switch
@@ -34,7 +46,9 @@ NeighbourSwitch add_new_neighbour_switch(int socket_fd, IpAddress ip_address, in
 	// add neighbour switch to known ip addresses
 	KnownIpAddress known_ip_address = create_known_ip_address(ip_address, new_switch, distance);
 	known_ip_addresses = realloc(known_ip_addresses, sizeof(IpAddress) * (num_known_ip_addresses + 1));
-	known_ip_addresses[num_known_ip_addresses] = known_ip_address;
+	known_ip_addresses[num_known_ip_addresses].distance = known_ip_address.distance;
+	known_ip_addresses[num_known_ip_addresses].ip_address = known_ip_address.ip_address;
+	known_ip_addresses[num_known_ip_addresses].next_hop = known_ip_address.next_hop;
 	num_known_ip_addresses++;
 
 	return new_switch;

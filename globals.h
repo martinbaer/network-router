@@ -44,6 +44,7 @@ extern int num_known_ip_addresses;
 extern KnownIpAddress *known_ip_addresses;
 
 KnownIpAddress *find_known_ip_address(IpAddress ip_address);
+NeighbourSwitch *find_neighbour_switch(IpAddress ip_address);
 
 void add_new_known_ip_address(IpAddress ip_address, NeighbourSwitch next_hop, int distance);
 

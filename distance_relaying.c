@@ -79,14 +79,24 @@ bool neighbour_switch_equals(NeighbourSwitch switch1, NeighbourSwitch switch2)
 // If the distance specified in the packet is greater than or equal to the existing distance record, or if the distance is greater than 1000, the switch will do nothing.
 void relay_distance(KnownIpAddress subject, NeighbourSwitch informant)
 {
+	fprintf(stderr, "Relaying distance\n");
+	fflush(stderr);
 	// send distance to all neighbour switches except subject and informant
 	for (int i = 0; i < num_neighbour_switches; i++)
 	{
+		fprintf(stderr, "Neighbour switch: %d.%d.%d.%d\n", neighbour_switches[i].ip_address.octet[0], neighbour_switches[i].ip_address.octet[1], neighbour_switches[i].ip_address.octet[2], neighbour_switches[i].ip_address.octet[3]);
+		fflush(stderr);
 		if (!ip_address_equals(neighbour_switches[i].ip_address, subject.ip_address) && !ip_address_equals(neighbour_switches[i].ip_address, informant.ip_address))
 		{
+			fprintf(stderr, "trying to find...\n");
 			KnownIpAddress *neighbour_known_ip_address = find_known_ip_address(neighbour_switches[i].ip_address);
+			// print neighbout known ip address
+			fprintf(stderr, "trying to print...\n");
+			fprintf(stderr, "Neighbour known ip address: %d.%d.%d.%d\n", neighbour_known_ip_address->ip_address.octet[0], neighbour_known_ip_address->ip_address.octet[1], neighbour_known_ip_address->ip_address.octet[2], neighbour_known_ip_address->ip_address.octet[3]);
 			// calculate distance
 			int distance = subject.distance + neighbour_known_ip_address->distance;
+			// print distance calculation
+			fprintf(stderr, "Distance calculation: %d + %d = %d\n", subject.distance, neighbour_known_ip_address->distance, distance);
 			// if distance is greater than 1000, do nothing
 			if (distance >= 1000)
 			{
@@ -95,6 +105,7 @@ void relay_distance(KnownIpAddress subject, NeighbourSwitch informant)
 			Packet packet = create_distance_packet(this_switch.global_ip.ip_address, neighbour_switches[i].ip_address, subject.ip_address, distance);
 			Byte *packet_bytes = packet_to_bytes(packet);
 			// send packet
+			fprintf(stderr, "sending...\n");
 			if (send(neighbour_switches[i].socket_fd, packet_bytes, TCP_BUFFER_SIZE, 0) < 0)
 			{
 				perror("send failed");
@@ -102,6 +113,8 @@ void relay_distance(KnownIpAddress subject, NeighbourSwitch informant)
 			free(packet_bytes);
 		}
 	}
+	fprintf(stderr, "Finished relaying distance\n");
+	fflush(stderr);
 }
 
 int calculate_distance(Coordinate location1, Coordinate location2)

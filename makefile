@@ -1,7 +1,7 @@
 .PHONY :  clean
 CC = gcc
 
-CFLAGS = -Wall -pedantic -std=gnu99
+CFLAGS = -Wall -pedantic -std=gnu99 -lpthread -lm
 
 RUSHBSwitch: main.o invocation.o open_port.o packet.o connect_switch.o connect_adapter.o ip_allocation.o distance_relaying.o data_forwarding.o globals.o
 	$(CC) $(CFLAGS) -o $@ $^

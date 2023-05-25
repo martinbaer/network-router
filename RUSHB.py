@@ -450,7 +450,7 @@ class Connection:
 		#
 		# run the test using: python3 RUSHB.py -m MINIMAP_3 -o MINIMAP_3.bout
 		# check output using: diff MINIMAP_3.bout test_files/MINIMAP_3.bout
-		self._output.write("hello\n")
+		# self._output.write("hello\n")
 		tcp_sock_1, tcp_sock_2, info = self.switch_global_greeting(modified_test_name="MINIMAP_3")
 		switch_name_1 = "[S1] "
 		switch_name_2 = "[S2] "
