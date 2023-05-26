@@ -16,7 +16,7 @@ void *listen_for_adapter_connections(void *arg)
 {
 	// UDP socket file descriptor
 	int socket_fd = *(int *)arg;
-
+	fflush(stdout);
 	// listen for UDP packets
 	while (1)
 	{

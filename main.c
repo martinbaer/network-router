@@ -33,14 +33,12 @@ int main(int argc, char *argv[])
 		// open UDP port
 		udp_port = open_port(SOCK_DGRAM);
 		printf("%d\n", udp_port.port);
-		fflush(stdout);
 	}
 	if (this_switch.type == GLOBAL || this_switch.type == MIXED)
 	{
 		// open TCP port
 		tcp_port = open_port(SOCK_STREAM);
 		printf("%d\n", tcp_port.port);
-		fflush(stdout);
 	}
 
 	pthread_t listen_for_commands_thread, listen_for_switch_connections_thread, listen_for_adaptor_connections_thread;

@@ -291,6 +291,7 @@ void *listen_for_switch_connections(void *arg)
 	{
 		perror("listen failed");
 	}
+	fflush(stdout);
 	// continuously accept
 	while (1)
 	{
