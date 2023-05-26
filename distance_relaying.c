@@ -84,14 +84,10 @@ void relay_distance(KnownIpAddress subject, NeighbourSwitch informant)
 	// send distance to all neighbour switches except subject and informant
 	for (int i = 0; i < num_neighbour_switches; i++)
 	{
-		fprintf(stderr, "Neighbour switch: %d.%d.%d.%d\n", neighbour_switches[i].ip_address.octet[0], neighbour_switches[i].ip_address.octet[1], neighbour_switches[i].ip_address.octet[2], neighbour_switches[i].ip_address.octet[3]);
-		fflush(stderr);
 		if (!ip_address_equals(neighbour_switches[i].ip_address, subject.ip_address) && !ip_address_equals(neighbour_switches[i].ip_address, informant.ip_address))
 		{
-			fprintf(stderr, "trying to find...\n");
 			KnownIpAddress *neighbour_known_ip_address = find_known_ip_address(neighbour_switches[i].ip_address);
 			// print neighbout known ip address
-			fprintf(stderr, "trying to print...\n");
 			fprintf(stderr, "Neighbour known ip address: %d.%d.%d.%d\n", neighbour_known_ip_address->ip_address.octet[0], neighbour_known_ip_address->ip_address.octet[1], neighbour_known_ip_address->ip_address.octet[2], neighbour_known_ip_address->ip_address.octet[3]);
 			// calculate distance
 			int distance = subject.distance + neighbour_known_ip_address->distance;
