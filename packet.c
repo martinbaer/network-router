@@ -94,9 +94,9 @@ Packet bytes_to_packet(Byte *bytes)
 	result.source_ip = bytes_to_ip_address(bytes);
 	result.destination_ip = bytes_to_ip_address(bytes + 4);
 	memcpy(&result.offset, bytes + 8, 3);
-	result.offset = result.offset & 0xFFFFFF;
+	// result.offset = result.offset & 0xFFFFFF;
 	memcpy(&result.mode, bytes + 11, 1);
-	result.offset = result.offset & 0xFF;
+	result.mode = result.mode & 0xFF;
 	result.data = bytes + 12;
 	return result;
 }
